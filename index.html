@@ -742,6 +742,94 @@
       display: none;
     }
 
+    .payment-field {
+      margin-top: 4px;
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(42, 104, 170, 0.12);
+      background: linear-gradient(160deg, #f6faff, #fffefb);
+    }
+
+    .payment-field.is-hidden {
+      display: none;
+    }
+
+    .payment-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .payment-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .payment-badge {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .payment-copy {
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-size: 0.93rem;
+      line-height: 1.62;
+    }
+
+    .payment-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .payment-row {
+      padding: 12px 13px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(41, 57, 85, 0.1);
+    }
+
+    .payment-row strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .payment-row span {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .promo-label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 800;
+      color: #8f97a7;
+    }
+
+    .promo-note {
+      margin-top: 8px;
+      color: var(--green);
+      font-size: 0.86rem;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
     .minor-link {
       display: inline-flex;
       align-items: center;
@@ -1122,6 +1210,10 @@
       .topbar-actions .button {
         flex: 1 1 100%;
       }
+
+      .payment-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 720px) {
@@ -1378,7 +1470,32 @@
                 <option>Jeune actif</option>
               </select>
             </div>
-            <button class="button button-primary" type="submit" id="signup-submit">Je teste Budgee gratuitement</button>
+            <div class="payment-field" id="payment-field">
+              <div class="payment-head">
+                <div class="payment-title">Paiement sécurisé sur le site</div>
+                <div class="payment-badge">Carte avant essai</div>
+              </div>
+              <p class="payment-copy">
+                Ta carte est demandée sur le site pour démarrer ton essai gratuit. Aucun prélèvement
+                avant la fin des 7 jours.
+              </p>
+
+              <div class="payment-grid">
+                <div class="payment-row">
+                  <strong>Paiement sécurisé</strong>
+                  <span>La carte et l’abonnement sont gérés sur le site Budgee, pas dans l’app.</span>
+                </div>
+                <div class="payment-row">
+                  <strong>Essai gratuit</strong>
+                  <span>Ton essai commence après validation du paiement sécurisé sur le site.</span>
+                </div>
+              </div>
+
+              <label class="promo-label" for="promo-code">Code promo BDE</label>
+              <input class="field" id="promo-code" type="text" placeholder="Ex : BDECAMPUS" autocomplete="off">
+              <div class="promo-note">Un code BDE valide prolonge l’essai à 14 jours.</div>
+            </div>
+            <button class="button button-primary" type="submit" id="signup-submit">Créer mon compte et continuer vers le paiement</button>
           </form>
 
           <a class="minor-link" href="#" id="forgot-password-link">Mot de passe oublié ?</a>
@@ -1535,9 +1652,12 @@
     const emailField = document.getElementById('email-field');
     const passwordField = document.getElementById('password-field');
     const profileField = document.getElementById('profile-field');
+    const paymentField = document.getElementById('payment-field');
+    const promoCodeField = document.getElementById('promo-code');
     const signupModeButton = document.getElementById('mode-signup');
     const loginModeButton = document.getElementById('mode-login');
     const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const pendingSignupStorageKey = 'budgee-pending-signup';
     const supabaseUrl = 'https://wbxcigccadbkzxrmtpqp.supabase.co';
     const supabasePublishableKey = 'sb_publishable_FjCxygFFtvLN8Nt71TAAMA_z56vZ47o';
     const supabase = createClient(supabaseUrl, supabasePublishableKey);
@@ -1566,6 +1686,65 @@
       }
     }
 
+    function hasSubscriptionAccess(subscription) {
+      if (!subscription) {
+        return false;
+      }
+
+      if (subscription.status === 'trialing' || subscription.status === 'active') {
+        return true;
+      }
+
+      if (
+        (subscription.status === 'past_due' || subscription.status === 'canceled') &&
+        subscription.current_period_end_at
+      ) {
+        return new Date(subscription.current_period_end_at).getTime() > Date.now();
+      }
+
+      return false;
+    }
+
+    async function fetchCurrentSubscription(userId) {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, status, trial_ends_at, current_period_end_at, cancel_at_period_end')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    }
+
+    async function launchCheckout({ userId, email, fullName, profileType, promoCode }) {
+      const response = await fetch('/.netlify/functions/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          email,
+          fullName,
+          profileType,
+          promoCode,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok || !payload.url) {
+        throw new Error(payload.error || 'Le paiement sécurisé n’est pas disponible pour le moment.');
+      }
+
+      window.location.href = payload.url;
+    }
+
     function getAuthParams() {
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       const search = new URLSearchParams(window.location.search);
@@ -1585,6 +1764,45 @@
       return window.location.href.split('#')[0];
     }
 
+    function savePendingSignup(payload) {
+      try {
+        localStorage.setItem(pendingSignupStorageKey, JSON.stringify(payload));
+      } catch (storageError) {
+        console.warn('Impossible de mémoriser le signup Budgee.', storageError);
+      }
+    }
+
+    function readPendingSignup() {
+      try {
+        const rawValue = localStorage.getItem(pendingSignupStorageKey);
+        if (!rawValue) {
+          return null;
+        }
+
+        return JSON.parse(rawValue);
+      } catch (storageError) {
+        console.warn('Impossible de lire le signup Budgee en attente.', storageError);
+        return null;
+      }
+    }
+
+    function clearPendingSignup() {
+      try {
+        localStorage.removeItem(pendingSignupStorageKey);
+      } catch (storageError) {
+        console.warn('Impossible de nettoyer le signup Budgee en attente.', storageError);
+      }
+    }
+
+    function getPendingSignupForEmail(email) {
+      const pendingSignup = readPendingSignup();
+      if (!pendingSignup || !email) {
+        return null;
+      }
+
+      return pendingSignup.email === email.toLowerCase() ? pendingSignup : null;
+    }
+
     function setAuthMode(mode) {
       authMode = mode;
 
@@ -1596,11 +1814,12 @@
       nameField.classList.toggle('hidden-field', !isSignup);
       emailField.classList.toggle('hidden-field', isRecovery);
       profileField.classList.toggle('hidden-field', !isSignup);
+      paymentField.classList.toggle('is-hidden', isRecovery);
       document.getElementById('signup-name').required = isSignup;
       document.getElementById('signup-email').required = !isRecovery;
       document.getElementById('signup-password').autocomplete = isSignup || isRecovery ? 'new-password' : 'current-password';
       submitButton.textContent = isSignup
-        ? 'Je teste Budgee gratuitement'
+        ? 'Créer mon compte et continuer vers le paiement'
         : isRecovery
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
@@ -1610,17 +1829,17 @@
           ? 'Choisis un nouveau mot de passe'
           : 'Connecte-toi et retrouve ton budget';
       authCopy.textContent = isSignup
-        ? "Inscris-toi maintenant, teste Budgee gratuitement pendant 7 jours et vois enfin où part ton argent chaque mois."
+        ? "Crée ton compte, ajoute ta carte sur le site et démarre 7 jours gratuits pour tester Budgee sans stress."
         : isRecovery
           ? "Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Budgee."
-          : "Connecte-toi avec ton compte Budgee pour retrouver ton budget, tes enveloppes et ton épargne.";
+          : "Connecte-toi pour reprendre ton budget ou finaliser le paiement sécurisé si ton essai n’a pas encore démarré.";
       forgotPasswordLink.style.display = isRecovery ? 'none' : 'inline-flex';
       setStatus(
         isSignup
-          ? "2 minutes pour commencer. 7 jours gratuits pour tester l’app tranquillement. Aucun engagement."
+          ? "Crée ton compte, ajoute ta carte sur le site et démarre 7 jours gratuits. Avec un code BDE valide, l’essai passe à 14 jours."
           : isRecovery
             ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
-            : "Entre simplement ton email et ton mot de passe pour revenir dans Budgee.",
+            : "Connecte-toi pour vérifier ton accès Budgee ou relancer ton essai gratuit.",
         'info'
       );
     }
@@ -1664,6 +1883,7 @@
       const email = document.getElementById('signup-email').value.trim().toLowerCase();
       const password = document.getElementById('signup-password').value;
       const profileType = document.getElementById('signup-profile').value;
+      const promoCode = promoCodeField.value.trim();
 
       if ((!email && authMode !== 'recovery') || !password || (authMode === 'signup' && !name)) {
         setStatus(
@@ -1706,7 +1926,7 @@
         if (!redirectTo) {
           submitButton.disabled = false;
           submitButton.style.opacity = '1';
-          submitButton.textContent = 'Je teste Budgee gratuitement';
+          submitButton.textContent = 'Créer mon compte et continuer vers le paiement';
           const message = "Pour créer un compte avec email de confirmation, ouvre d’abord le site via localhost ou une vraie URL web.";
           setStatus(message, 'error');
           showToast('Ouvre le site via localhost');
@@ -1742,7 +1962,7 @@
       submitButton.disabled = false;
       submitButton.style.opacity = '1';
       submitButton.textContent = authMode === 'signup'
-        ? 'Je teste Budgee gratuitement'
+        ? 'Créer mon compte et continuer vers le paiement'
         : authMode === 'recovery'
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
@@ -1770,9 +1990,42 @@
       }
 
       if (authMode === 'signup') {
-        form.reset();
-        setStatus("Compte créé. Vérifie ton email pour confirmer ton inscription et commencer ton essai gratuit.", 'success');
-        showToast('Compte créé. Vérifie ton email.');
+        savePendingSignup({
+          email,
+          fullName: name,
+          profileType,
+          promoCode,
+        });
+
+        if (!data?.session) {
+          setAuthMode('login');
+          setStatus(
+            "Compte créé. Vérifie ton email : après confirmation, Budgee t’enverra vers le paiement sécurisé.",
+            'success'
+          );
+          showToast('Email de confirmation envoyé');
+          return;
+        }
+
+        try {
+          setStatus('Compte créé. Redirection vers le paiement sécurisé...', 'info');
+          await launchCheckout({
+            userId: data?.user?.id,
+            email,
+            fullName: name,
+            profileType,
+            promoCode,
+          });
+          clearPendingSignup();
+        } catch (checkoutError) {
+          setStatus(
+            checkoutError instanceof Error
+              ? checkoutError.message
+              : 'Compte créé, mais le paiement sécurisé est indisponible pour le moment.',
+            'error'
+          );
+          showToast('Paiement indisponible');
+        }
         return;
       }
 
@@ -1784,20 +2037,94 @@
         return;
       }
 
-      setStatus("Connexion réussie. Tu peux maintenant ouvrir l’app Budgee et retrouver ton budget.", 'success');
-      showToast('Connexion réussie');
+      try {
+        const currentSubscription = await fetchCurrentSubscription(data?.session?.user?.id);
+
+        if (hasSubscriptionAccess(currentSubscription)) {
+          setStatus("Connexion réussie. Ton accès Budgee est actif, tu peux ouvrir l’app.", 'success');
+          showToast('Accès Budgee actif');
+          return;
+        }
+
+        setStatus('Connexion réussie. On te redirige vers le paiement sécurisé pour démarrer ton essai.', 'info');
+        await launchCheckout({
+          userId: data?.session?.user?.id,
+          email: data?.session?.user?.email ?? email,
+          fullName: data?.session?.user?.user_metadata?.name ?? '',
+          profileType: data?.session?.user?.user_metadata?.profile_type ?? '',
+          promoCode,
+        });
+      } catch (checkoutError) {
+        setStatus(
+          checkoutError instanceof Error
+            ? checkoutError.message
+            : 'Connexion réussie, mais le paiement sécurisé est indisponible pour le moment.',
+          'error'
+        );
+        showToast('Paiement indisponible');
+      }
     });
 
     const authParams = getAuthParams();
+    const searchParams = new URLSearchParams(window.location.search);
     const { data: sessionData } = await supabase.auth.getSession();
     if (window.location.protocol === 'file:') {
       setStatus("Le site est ouvert en fichier local. Pour que les emails de confirmation fonctionnent, lance-le via localhost ou publie-le sur Netlify/Vercel.", 'error');
+    } else if (searchParams.get('checkout') === 'success') {
+      clearPendingSignup();
+      setAuthMode('login');
+      setStatus("Paiement enregistré. Si ton email n’est pas encore confirmé, valide-le puis connecte-toi dans l’app Budgee.", 'success');
+      showToast('Essai Budgee activé');
+    } else if (searchParams.get('checkout') === 'cancel') {
+      setAuthMode('login');
+      setStatus("Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Budgee.", 'error');
     } else if (authParams.hashType === 'recovery' || authParams.searchType === 'recovery') {
       setAuthMode('recovery');
       setStatus('Choisis ton nouveau mot de passe pour récupérer ton compte Budgee.', 'info');
     } else if (sessionData?.session) {
       setAuthMode('login');
-      setStatus("Tu es connectée. Tu peux ouvrir l’app Budgee et reprendre ton budget là où tu l’as laissé.", 'success');
+      try {
+        const currentSubscription = await fetchCurrentSubscription(sessionData.session.user.id);
+        if (hasSubscriptionAccess(currentSubscription)) {
+          clearPendingSignup();
+          setStatus("Tu es connectée. Ton accès Budgee est actif, tu peux ouvrir l’app.", 'success');
+        } else {
+          const pendingSignup = getPendingSignupForEmail(sessionData.session.user.email ?? '');
+          const shouldAutoCheckout =
+            authParams.hasAccessToken ||
+            authParams.hasCode ||
+            authParams.hashType === 'signup' ||
+            authParams.searchType === 'signup' ||
+            Boolean(pendingSignup);
+
+          if (shouldAutoCheckout) {
+            setStatus('Email confirmé. Redirection vers le paiement sécurisé...', 'info');
+            await launchCheckout({
+              userId: sessionData.session.user.id,
+              email: sessionData.session.user.email ?? '',
+              fullName:
+                pendingSignup?.fullName ??
+                sessionData.session.user.user_metadata?.name ??
+                '',
+              profileType:
+                pendingSignup?.profileType ??
+                sessionData.session.user.user_metadata?.profile_type ??
+                '',
+              promoCode: pendingSignup?.promoCode ?? '',
+            });
+            clearPendingSignup();
+          } else {
+            setStatus("Tu es connectée. Termine le paiement sécurisé pour démarrer ton essai Budgee.", 'info');
+          }
+        }
+      } catch (subscriptionError) {
+        setStatus(
+          subscriptionError instanceof Error
+            ? subscriptionError.message
+            : "On n’a pas réussi à vérifier ton abonnement Budgee.",
+          'error'
+        );
+      }
     } else {
       const hasAuthParams =
         authParams.hasAccessToken ||
