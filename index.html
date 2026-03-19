@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budgee - L'application de budget étudiant pour éviter le stress de fin de mois</title>
+  <title>Budgee - L'application de budget étudiant pour comprendre ses dépenses et éviter les fins de mois galères</title>
   <meta
     name="description"
-    content="Budgee est l'application de budget étudiant qui t'aide à comprendre où part ton argent, éviter les fins de mois stressantes et épargner simplement. 7 jours d'essai gratuit."
+    content="Budgee est l'application de budget étudiant qui t'aide à voir où part ton argent, éviter d'être à sec avant la fin du mois et reprendre le contrôle simplement. 7 jours d'essai gratuit."
   >
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -221,6 +221,21 @@
       font-size: 1rem;
       line-height: 1.66;
       color: var(--muted);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .hero-micro {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.55;
+      font-weight: 700;
     }
 
     .hero-reassurance {
@@ -1091,6 +1106,21 @@
       font-size: 1rem;
     }
 
+    .section-inline-cta {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .section-inline-micro {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.55;
+      font-weight: 700;
+    }
+
     .download {
       margin-top: 20px;
       padding: 20px 24px;
@@ -1258,6 +1288,11 @@
       .hero-title-lock {
         white-space: normal;
       }
+
+      .hero-actions,
+      .section-inline-cta {
+        align-items: stretch;
+      }
     }
   </style>
 </head>
@@ -1270,41 +1305,39 @@
 
       <div class="topbar-actions">
         <a class="button button-secondary" href="https://apps.apple.com/fr/search?term=budgee" target="_blank" rel="noreferrer">Télécharger l'app</a>
-        <a class="button button-primary" href="#inscription">Tester 7 jours gratuitement</a>
+        <a class="button button-primary" href="#inscription">Tester gratuitement</a>
       </div>
     </header>
 
     <section class="hero">
       <article class="hero-card">
         <div class="hero-main">
-          <div class="eyebrow">7 jours gratuits · offre de lancement</div>
-          <h2 class="hero-title">
-            <span class="hero-title-line hero-title-line-main">Ton argent disparaît</span>
-            <span class="hero-title-line hero-title-lock">plus vite que tes <span class="hero-title-highlight">résolutions</span> ?</span>
-          </h2>
+          <div class="eyebrow">7 jours gratuits</div>
+          <h1 class="hero-title">
+            <span class="hero-title-line">L’app budget pour étudiants</span>
+            <span class="hero-title-line">qui veulent arrêter d’être à sec avant la fin du mois.</span>
+          </h1>
           <p class="hero-sub">
-            Budgee, c’est le buddy qui t’aide à comprendre où part ton argent, à éviter le stress de
-            fin de mois et à économiser sans te couper de tout.
+            Visualise tes dépenses, anticipe tes fins de mois et garde le contrôle — sans prise de tête.
           </p>
 
-          <div class="hero-reassurance">
-            <div class="mini-pill">2 minutes pour commencer</div>
-            <div class="mini-pill">Aucun engagement</div>
-            <div class="mini-pill">Résiliation en un clic</div>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#inscription">Tester gratuitement</a>
+            <div class="hero-micro">7 jours gratuits • Sans engagement • Résiliation en 1 clic</div>
           </div>
 
           <div class="sales-grid">
             <article class="sales-key">
-              <strong>Moins cher qu’un café</strong>
-              <p>3,49€/mois pour éviter bien plus que 3,49€ de dépenses floues ou oubliées.</p>
+              <strong>Tu vois enfin ce qui pèse</strong>
+              <p>Loyer, courses, abonnements, sorties : ton mois devient lisible en quelques secondes.</p>
             </article>
             <article class="sales-key">
-              <strong>Tu économises vite</strong>
-              <p>Une seule dépense évitée dans le mois peut suffire à rentabiliser Budgee.</p>
+              <strong>Tu stresses moins en fin de mois</strong>
+              <p>Tu repères plus tôt les zones qui dérapent, avant de subir ton solde.</p>
             </article>
             <article class="sales-key">
-              <strong>Pas de prise de tête</strong>
-              <p>Tu vois plus clair rapidement, sans tableau compliqué ni budget austère.</p>
+              <strong>3,49 € vite rentabilisés</strong>
+              <p>Moins cher qu’un café, et souvent remboursé par une seule dépense évitée.</p>
             </article>
           </div>
 
@@ -1423,13 +1456,12 @@
 
         <div class="buddy-card">
           <div class="buddy-head">
-            <h3>Budgee n’est pas un tableur. C’est ton allié budget.</h3>
-            <div class="launch-pill">Accès anticipé</div>
+            <h3>Une app budget qui te parle normalement.</h3>
+            <div class="launch-pill">Simple, claire, utile</div>
           </div>
           <p class="buddy-copy">
-            Pas là pour te faire culpabiliser. Juste pour te dire la vérité avant que ton compte ne
-            parte en freestyle. Budgee te parle simplement, te montre ce qui compte et t’aide à
-            garder la main sans transformer ton budget en punition.
+            Pas un tableur à nourrir. Pas une app bancaire qui te laisse te débrouiller. Juste une
+            vue claire de ton mois pour savoir où tu en es, quoi ajuster et combien il te reste.
           </p>
         </div>
       </article>
@@ -1440,11 +1472,10 @@
             <button type="button" class="is-active" id="mode-signup">S’inscrire</button>
             <button type="button" id="mode-login">Se connecter</button>
           </div>
-          <div class="trial-banner">7 jours d'essai gratuit</div>
-          <h3 id="auth-title">Crée ton compte et reprends le contrôle</h3>
+          <div class="trial-banner">7 jours gratuits pour tester</div>
+          <h3 id="auth-title">Crée ton compte et démarre ton essai</h3>
           <p id="auth-copy">
-            Inscris-toi maintenant, teste Budgee gratuitement pendant 7 jours et vois enfin où part
-            ton argent chaque mois.
+            En 2 minutes, tu poses les bases de ton budget et tu vois déjà plus clair sur ton mois.
           </p>
         </div>
 
@@ -1476,47 +1507,47 @@
                 <div class="payment-badge">Carte avant essai</div>
               </div>
               <p class="payment-copy">
-                Ta carte est demandée sur le site pour démarrer ton essai gratuit. Aucun prélèvement
-                avant la fin des 7 jours.
+                Ta carte est demandée pour démarrer l’essai gratuit. Aucun prélèvement avant la fin
+                des 7 jours.
               </p>
 
               <div class="payment-grid">
                 <div class="payment-row">
-                  <strong>Paiement sécurisé</strong>
-                  <span>La carte et l’abonnement sont gérés sur le site Budgee, pas dans l’app.</span>
+                  <strong>Carte sécurisée</strong>
+                  <span>Ton paiement est géré sur le site Budgee avec un parcours clair et protégé.</span>
                 </div>
                 <div class="payment-row">
-                  <strong>Essai gratuit</strong>
-                  <span>Ton essai commence après validation du paiement sécurisé sur le site.</span>
+                  <strong>Essai activé après validation</strong>
+                  <span>Tu testes Budgee tranquillement avant le premier prélèvement.</span>
                 </div>
               </div>
 
-              <label class="promo-label" for="promo-code">Code promo BDE</label>
-              <input class="field" id="promo-code" type="text" placeholder="Ex : BDECAMPUS" autocomplete="off">
-              <div class="promo-note">Un code BDE valide prolonge l’essai à 14 jours.</div>
+              <label class="promo-label" for="promo-code">Code promo</label>
+              <input class="field" id="promo-code" type="text" placeholder="Ex : WELCOME14" autocomplete="off">
+              <div class="promo-note">Si tu as un code promo valide, ton essai peut être prolongé.</div>
             </div>
-            <button class="button button-primary" type="submit" id="signup-submit">Créer mon compte et continuer vers le paiement</button>
+            <button class="button button-primary" type="submit" id="signup-submit">Tester gratuitement</button>
           </form>
 
           <a class="minor-link" href="#" id="forgot-password-link">Mot de passe oublié ?</a>
 
           <div class="signup-note" id="signup-status">
-            2 minutes pour commencer. 7 jours gratuits pour tester l’app tranquillement. Aucun engagement.
+            7 jours gratuits pour tester vraiment. Ensuite 3,49 €/mois, sans prise de tête.
           </div>
 
           <div class="price-box">
             <div class="price-top">
-              <strong>Après l’essai gratuit</strong>
+              <strong>Ensuite 3,49 €/mois</strong>
               <div class="price-value">3,49 <span>€/mois</span></div>
             </div>
             <p>
-              Franchement, c’est moins qu’un café en gare. Et si Budgee t’évite juste une dépense
-              inutile dans le mois, il s’est déjà remboursé tout seul.
+              Moins qu’un café, et souvent bien plus utile. Si Budgee t’aide à éviter une seule
+              dépense inutile dans le mois, il est déjà rentabilisé.
             </p>
             <ul class="price-list">
-              <li>Comprendre où part ton argent</li>
-              <li>Éviter les fins de mois en panique</li>
-              <li>Épargner sans te frustrer</li>
+              <li>Voir où part ton argent</li>
+              <li>Éviter d’être à sec trop tôt</li>
+              <li>Garder de la marge sans te priver</li>
             </ul>
           </div>
         </div>
@@ -1525,60 +1556,31 @@
 
     <section class="section-card">
       <div class="section-head">
-        <div class="section-kicker">Ce que ça change concrètement</div>
-        <h3>Pas plus de features. Plus de résultats.</h3>
+        <div class="section-kicker">Le problème</div>
+        <h3>Tu te reconnais ?</h3>
         <p>
-          Budgee t’aide à prendre de meilleures décisions sans te demander d’être parfait ni de tout noter dans un fichier compliqué.
-        </p>
-      </div>
-
-      <div class="benefits-grid">
-        <article class="benefit">
-          <strong>Tu comprends enfin où part ton argent</strong>
-          <p>Fini le flou de fin de mois. Tu sais ce qui part en loyer, en courses, en abonnements et en petits craquages.</p>
-        </article>
-        <article class="benefit">
-          <strong>Tu évites le découvert plus souvent</strong>
-          <p>Tu repères les zones à risque avant qu’elles te tombent dessus, au lieu de découvrir le problème trop tard.</p>
-        </article>
-        <article class="benefit">
-          <strong>Tu économises sans te frustrer</strong>
-          <p>Tu mets de côté pour tes vrais projets sans avoir l’impression de vivre en mode privation.</p>
-        </article>
-        <article class="benefit">
-          <strong>Tu respires mieux en fin de mois</strong>
-          <p>Moins de stress, moins de surprises, plus de visibilité sur ce que tu peux vraiment dépenser.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section-card">
-      <div class="section-head">
-        <div class="section-kicker">On connaît ce moment</div>
-        <h3>Oui, Budgee parle à cette sensation-là.</h3>
-        <p>
-          Celle où tu ouvres ton appli bancaire un peu en apnée. Celle où tu sais qu’il y a eu des dépenses... mais impossible de dire où.
+          Le problème, ce n’est pas ton budget. C’est le manque de visibilité.
         </p>
       </div>
 
       <div class="emotion-grid">
         <div class="emotion-wall">
-          <div class="emotion-question">T’as déjà regardé ton compte en mode panique après un début de mois un peu trop léger ?</div>
-          <div class="emotion-question">Tu ne sais pas où ton argent disparaît entre deux courses, trois abonnements et un resto “vite fait” ?</div>
-          <div class="emotion-question">Tu te dis souvent “ce mois-ci je gère mieux”... puis tout repart dans le brouillard ?</div>
+          <div class="emotion-question">Tu regardes ton compte sans comprendre où ton argent est passé</div>
+          <div class="emotion-question">Tu dépenses un peu chaque jour… et à la fin du mois tu es à sec</div>
+          <div class="emotion-question">Tu veux économiser, mais tu ne sais jamais combien tu peux vraiment dépenser</div>
         </div>
 
         <div class="emotion-answer">
-          <h4>Budgee te remet dans le siège conducteur.</h4>
+          <h4>Quand tu vois mieux, tu gères mieux.</h4>
           <div class="emotion-solutions">
             <article class="emotion-solution">
-              <strong>Tu vois enfin où part ton argent.</strong>
+              <strong>Plus de clarté</strong>
             </article>
             <article class="emotion-solution">
-              <strong>Tu ajustes avant de finir en stress.</strong>
+              <strong>Moins de stress</strong>
             </article>
             <article class="emotion-solution">
-              <strong>Tu gardes plus facilement de la marge.</strong>
+              <strong>De meilleures décisions</strong>
             </article>
           </div>
         </div>
@@ -1587,41 +1589,154 @@
 
     <section class="section-card">
       <div class="section-head">
-        <div class="section-kicker">Simple et rassurant</div>
+        <div class="section-kicker">La solution</div>
+        <h3>Budgee te simplifie la vie</h3>
+        <p>
+          Pas de tableaux compliqués. Pas de jargon. Juste un outil simple pour comprendre et gérer ton argent au quotidien.
+        </p>
+      </div>
+
+      <div class="benefits-grid">
+        <article class="benefit">
+          <strong>Vois exactement où part ton argent</strong>
+          <p>Tu comprends enfin ce qui pèse dans ton mois, sans fouiller partout.</p>
+        </article>
+        <article class="benefit">
+          <strong>Sache combien il te reste pour finir le mois</strong>
+          <p>Tu vois rapidement ce que tu peux encore dépenser sans te mettre en stress.</p>
+        </article>
+        <article class="benefit">
+          <strong>Anticipe au lieu de subir</strong>
+          <p>Tu repères plus tôt les dépassements et tu ajustes avant que ça te tombe dessus.</p>
+        </article>
+        <article class="benefit">
+          <strong>Reprends la main simplement</strong>
+          <p>Une interface claire, des repères utiles, et zéro prise de tête pour avancer.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <div class="section-kicker">Les bénéfices concrets</div>
+        <h3>Avec Budgee, tu peux :</h3>
+        <p>
+          Avancer plus sereinement, sans te demander tous les trois jours où ton argent est passé.
+        </p>
+      </div>
+
+      <div class="benefits-grid">
+        <article class="benefit">
+          <strong>Arrêter les fins de mois stressantes</strong>
+          <p>Tu vois venir les zones à risque plus tôt et tu subis moins les mauvaises surprises.</p>
+        </article>
+        <article class="benefit">
+          <strong>Savoir combien tu peux dépenser sans culpabiliser</strong>
+          <p>Tu as un cadre clair pour profiter sans naviguer totalement à l’aveugle.</p>
+        </article>
+        <article class="benefit">
+          <strong>Mettre de côté même avec un petit budget</strong>
+          <p>Tu gardes de la marge pour tes projets sans avoir l’impression de te priver tout le temps.</p>
+        </article>
+        <article class="benefit">
+          <strong>Reprendre le contrôle de ton argent</strong>
+          <p>Tu n’attends plus la fin du mois pour comprendre ce qui s’est passé.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <div class="section-kicker">Pourquoi Budgee</div>
+        <h3>Pourquoi Budgee est différent</h3>
+        <p>
+          Budgee est pensé pour être simple, rapide et utile au quotidien.
+        </p>
+      </div>
+
+      <div class="benefits-grid">
+        <article class="benefit">
+          <strong>Excel → trop compliqué</strong>
+          <p>Tu n’as pas à construire ton propre système pour commencer à y voir clair.</p>
+        </article>
+        <article class="benefit">
+          <strong>Apps bancaires → pas adaptées aux étudiants</strong>
+          <p>Elles montrent le solde, mais pas toujours ce qu’il faut pour mieux gérer ton mois.</p>
+        </article>
+        <article class="benefit">
+          <strong>Autres apps → trop complexes</strong>
+          <p>Tu te retrouves vite noyé dans trop d’options au lieu d’aller à l’essentiel.</p>
+        </article>
+        <article class="benefit">
+          <strong>Budgee → simple, rapide, utile</strong>
+          <p>Tu ouvres, tu comprends, tu ajustes. C’est tout ce qu’on te demande.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <div class="section-kicker">Le prix</div>
+        <h3>Un prix accessible</h3>
+        <p>
+          Moins qu’un café par semaine pour éviter d’être à sec à la fin du mois.
+        </p>
+      </div>
+
+      <div class="benefits-grid">
+        <article class="benefit">
+          <strong>3,49 € / mois</strong>
+          <p>Un petit prix pour une vraie aide au quotidien, quand ton budget a besoin de clarté.</p>
+        </article>
+        <article class="benefit">
+          <strong>7 jours gratuits</strong>
+          <p>Tu peux tester vraiment l’app avant de décider si tu veux la garder.</p>
+        </article>
+      </div>
+
+      <div class="section-inline-cta">
+        <a class="button button-primary" href="#inscription">Commencer gratuitement</a>
+        <div class="section-inline-micro">7 jours gratuits • Sans engagement</div>
+      </div>
+    </section>
+
+    <section class="section-card">
+      <div class="section-head">
+        <div class="section-kicker">Rassurant</div>
         <h3>Tu peux tester sans pression.</h3>
         <p>
-          Le but, c’est que tu essaies vite, sans blocage, sans prise de tête, et que tu voies toi-même si Budgee t’aide vraiment.
+          L’idée, c’est que tu testes vite, comprennes vite et décides ensuite si Budgee mérite sa place dans ton mois.
         </p>
       </div>
 
       <div class="reassurance-grid">
         <article class="reassurance">
-          <strong>2 minutes pour commencer</strong>
-          <p>Tu crées ton compte, tu poses tes bases et tu vois déjà plus clair sur ton mois.</p>
+          <strong>Essai gratuit</strong>
+          <p>Tu peux découvrir Budgee tranquillement avant de décider.</p>
         </article>
         <article class="reassurance">
-          <strong>7 jours gratuits</strong>
-          <p>Le temps de découvrir Budgee tranquillement et de voir si l’app t’aide vraiment au quotidien.</p>
+          <strong>Sans engagement</strong>
+          <p>Tu testes l’app sans te sentir coincé dans un système compliqué.</p>
         </article>
         <article class="reassurance">
-          <strong>Aucun engagement</strong>
-          <p>Tu découvres Budgee sans te sentir coincé dans un système compliqué.</p>
+          <strong>Résiliation en 1 clic</strong>
+          <p>Si tu veux arrêter, tu le fais simplement et rapidement.</p>
         </article>
         <article class="reassurance">
-          <strong>Résiliation en un clic</strong>
-          <p>Si tu veux arrêter, tu arrêtes simplement. Pas de parcours caché.</p>
+          <strong>Données sécurisées</strong>
+          <p>Ton compte et tes informations sont gérés dans un cadre clair et protégé.</p>
         </article>
       </div>
     </section>
 
     <section class="final-cta">
       <div>
-        <h3>Arrête de subir ton compte. Commence à le piloter.</h3>
+        <h3>Reprends le contrôle dès aujourd’hui</h3>
         <p>
-          Tu veux comprendre où part ton argent, éviter le stress de fin de mois et économiser sans
-          te priver ? Commence avec 7 jours d’essai gratuit et vois si Budgee te simplifie vraiment le mois.
+          Commence simplement, vois où part ton argent, et teste Budgee sans pression pendant 7 jours.
         </p>
       </div>
+      <a class="button button-primary" href="#inscription">Tester Budgee gratuitement</a>
     </section>
 
     <section class="download" id="download-app">
@@ -1637,7 +1752,7 @@
     </section>
   </main>
 
-  <div class="toast" id="toast">Landing Budgee prête à brancher pour convertir.</div>
+  <div class="toast" id="toast">Budgee est prêt pour ton essai gratuit.</div>
 
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -1819,24 +1934,24 @@
       document.getElementById('signup-email').required = !isRecovery;
       document.getElementById('signup-password').autocomplete = isSignup || isRecovery ? 'new-password' : 'current-password';
       submitButton.textContent = isSignup
-        ? 'Créer mon compte et continuer vers le paiement'
+        ? 'Tester gratuitement'
         : isRecovery
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
       authTitle.textContent = isSignup
-        ? 'Crée ton compte et reprends le contrôle'
+        ? 'Crée ton compte et démarre ton essai'
         : isRecovery
           ? 'Choisis un nouveau mot de passe'
           : 'Connecte-toi et retrouve ton budget';
       authCopy.textContent = isSignup
-        ? "Crée ton compte, ajoute ta carte sur le site et démarre 7 jours gratuits pour tester Budgee sans stress."
+        ? "En 2 minutes, tu poses les bases de ton budget et tu vois déjà plus clair sur ton mois."
         : isRecovery
           ? "Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Budgee."
           : "Connecte-toi pour reprendre ton budget ou finaliser le paiement sécurisé si ton essai n’a pas encore démarré.";
       forgotPasswordLink.style.display = isRecovery ? 'none' : 'inline-flex';
       setStatus(
         isSignup
-          ? "Crée ton compte, ajoute ta carte sur le site et démarre 7 jours gratuits. Avec un code BDE valide, l’essai passe à 14 jours."
+          ? "7 jours gratuits pour tester vraiment. Ensuite 3,49 €/mois, sans prise de tête."
           : isRecovery
             ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
             : "Connecte-toi pour vérifier ton accès Budgee ou relancer ton essai gratuit.",
@@ -1926,7 +2041,7 @@
         if (!redirectTo) {
           submitButton.disabled = false;
           submitButton.style.opacity = '1';
-          submitButton.textContent = 'Créer mon compte et continuer vers le paiement';
+          submitButton.textContent = 'Tester gratuitement';
           const message = "Pour créer un compte avec email de confirmation, ouvre d’abord le site via localhost ou une vraie URL web.";
           setStatus(message, 'error');
           showToast('Ouvre le site via localhost');
@@ -1962,7 +2077,7 @@
       submitButton.disabled = false;
       submitButton.style.opacity = '1';
       submitButton.textContent = authMode === 'signup'
-        ? 'Créer mon compte et continuer vers le paiement'
+        ? 'Tester gratuitement'
         : authMode === 'recovery'
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
