@@ -158,6 +158,14 @@
       overflow: hidden;
     }
 
+    .footer-card {
+      border-radius: var(--radius-xxl);
+      border: 1px solid var(--line);
+      background: var(--paper);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
     .hero-card {
       display: flex;
       flex-direction: column;
@@ -168,6 +176,24 @@
         radial-gradient(circle at 88% 16%, rgba(171, 210, 255, 0.32), transparent 22%),
         radial-gradient(circle at 14% 86%, rgba(237, 180, 58, 0.2), transparent 18%),
         var(--paper);
+    }
+
+    .hero-copy-card {
+      padding: 22px;
+    }
+
+    .hero-visual-card {
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(171, 210, 255, 0.26), transparent 26%),
+        var(--paper);
+    }
+
+    .hero-visual-card .maquette-shell {
+      width: min(100%, 360px);
     }
 
     .hero-main {
@@ -844,6 +870,127 @@
       font-weight: 700;
     }
 
+    .step-card {
+      padding: 14px;
+      border-radius: 22px;
+      border: 1px solid rgba(41, 57, 85, 0.1);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .step-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .step-number {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 0.84rem;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .step-head strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.96rem;
+    }
+
+    .step-head p {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .profile-group {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .profile-option {
+      position: relative;
+    }
+
+    .profile-option input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .profile-option span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 54px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(41, 57, 85, 0.13);
+      background: rgba(255,255,255,0.98);
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-align: center;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, color 0.18s ease, background 0.18s ease;
+      cursor: pointer;
+    }
+
+    .profile-option input:checked + span {
+      color: var(--blue);
+      background: var(--blue-soft);
+      border-color: rgba(42, 104, 170, 0.34);
+      box-shadow: 0 0 0 4px rgba(42, 104, 170, 0.08);
+    }
+
+    .stripe-card-shell {
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 18px;
+      border: 1px solid rgba(41, 57, 85, 0.12);
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .stripe-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .stripe-card-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stripe-card-logos {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--blue);
+    }
+
+    .stripe-card-shell p {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .secure-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
     .minor-link {
       display: inline-flex;
       align-items: center;
@@ -967,6 +1114,14 @@
       font-size: 0.86rem;
     }
 
+    .section-transition {
+      margin-top: 12px;
+      color: var(--blue);
+      font-size: 0.92rem;
+      line-height: 1.4;
+      font-weight: 700;
+    }
+
     .benefits-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -990,6 +1145,17 @@
       color: var(--muted);
       line-height: 1.32;
       font-size: 0.8rem;
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 10px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: var(--blue-soft);
+      font-size: 1.1rem;
     }
 
     .emotion-grid {
@@ -1051,6 +1217,158 @@
 
     .emotion-solution strong {
       display: block;
+    }
+
+    .testimonials-lead {
+      margin-bottom: 12px;
+      color: var(--blue);
+      font-size: 0.94rem;
+      font-weight: 800;
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .testimonial {
+      padding: 14px;
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(42, 104, 170, 0.08);
+    }
+
+    .testimonial blockquote {
+      margin-bottom: 12px;
+      color: var(--text);
+      font-size: 0.94rem;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .testimonial-meta {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .testimonial-stars {
+      margin-top: 8px;
+      color: #c97b0a;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+    }
+
+    .pricing-wrap {
+      display: grid;
+      grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .pricing-main,
+    .pricing-side {
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid rgba(42, 104, 170, 0.1);
+      background: rgba(255,255,255,0.9);
+    }
+
+    .pricing-main {
+      background: linear-gradient(160deg, #fff8ea, #fffef8);
+      border-color: rgba(237, 180, 58, 0.34);
+    }
+
+    .pricing-value {
+      margin-bottom: 8px;
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.06em;
+      color: var(--blue);
+    }
+
+    .pricing-value span {
+      font-size: 1.02rem;
+      font-weight: 700;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+
+    .pricing-sub {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    .guarantees {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    .guarantees li::before {
+      content: "✓";
+      margin-right: 10px;
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .pricing-note {
+      padding: 14px;
+      border-radius: 18px;
+      background: var(--blue-soft);
+      color: var(--blue-deep);
+      font-size: 0.88rem;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .footer-card {
+      margin-top: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .footer-copy h3 {
+      margin-bottom: 4px;
+      font-size: 1.04rem;
+      letter-spacing: -0.02em;
+    }
+
+    .footer-copy p {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.84rem;
+      font-weight: 700;
     }
 
     .reassurance-grid {
@@ -1194,22 +1512,15 @@
 
     @media (max-width: 980px) {
       .hero,
-      .emotion-grid {
+      .emotion-grid,
+      .pricing-wrap {
         grid-template-columns: 1fr;
       }
 
       .benefits-grid,
       .reassurance-grid,
-      .sales-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .hero-gallery {
-        grid-template-columns: 1fr;
-        margin-top: 18px;
-      }
-
-      .maquette-stack {
+      .sales-grid,
+      .testimonials-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
@@ -1240,8 +1551,20 @@
         flex: 1 1 100%;
       }
 
-      .payment-grid {
+      .profile-group,
+      .testimonials-grid,
+      .benefits-grid,
+      .sales-grid {
         grid-template-columns: 1fr;
+      }
+
+      .footer-actions {
+        width: 100%;
+        align-items: stretch;
+      }
+
+      .footer-actions .button {
+        width: 100%;
       }
     }
 
@@ -1267,20 +1590,10 @@
 
       .benefits-grid,
       .reassurance-grid,
-      .sales-grid {
+      .sales-grid,
+      .testimonials-grid,
+      .profile-group {
         grid-template-columns: 1fr;
-      }
-
-      .hero-gallery {
-        grid-template-columns: 1fr;
-      }
-
-      .maquette-stack {
-        grid-template-columns: 1fr;
-      }
-
-      .final-cta {
-        padding: 22px 20px;
       }
 
       .hero-title-line-main,
@@ -1303,233 +1616,108 @@
       </a>
 
       <div class="topbar-actions">
-        <a class="button button-secondary" href="https://apps.apple.com/fr/search?term=budgee" target="_blank" rel="noreferrer">Télécharger l'app</a>
-        <a class="button button-primary" href="#inscription">Tester gratuitement</a>
+        <a class="button button-primary" href="#inscription">Commencer mon essai gratuit &rarr;</a>
       </div>
     </header>
 
     <section class="hero">
-      <article class="hero-card">
-        <div class="hero-main">
-          <div class="eyebrow">7 jours gratuits</div>
-          <h1 class="hero-title">
-            <span class="hero-title-line">L’app <span class="hero-title-highlight">budget</span> pour étudiants</span>
-            <span class="hero-title-line">qui veulent arrêter d’être <span class="hero-title-highlight-gold">à sec</span> avant la fin du mois.</span>
-          </h1>
-          <p class="hero-sub">
-            Visualise tes dépenses, anticipe tes fins de mois et garde le contrôle, sans prise de tête.
-          </p>
+      <article class="hero-card hero-copy-card">
+        <div class="eyebrow">7 jours gratuits</div>
+        <h1 class="hero-title">
+          <span class="hero-title-line">L’app <span class="hero-title-highlight">budget</span> pour étudiants</span>
+          <span class="hero-title-line">qui veulent arrêter d’être <span class="hero-title-highlight-gold">à sec</span> avant la fin du mois.</span>
+        </h1>
+        <p class="hero-sub">
+          En moins de 2 minutes par semaine, tu sais exactement combien tu peux encore dépenser jusqu'au bout du mois.
+        </p>
 
-          <div class="hero-actions">
-            <div class="hero-micro">7 jours gratuits • Sans engagement • Résiliation en 1 clic</div>
-          </div>
-
-          <div class="sales-grid">
-            <article class="sales-key">
-              <strong>Vois où ça part</strong>
-              <p>Loyer, courses, sorties.</p>
-            </article>
-            <article class="sales-key">
-              <strong>Sache ce qu’il reste</strong>
-              <p>Tu repères vite les écarts.</p>
-            </article>
-            <article class="sales-key">
-              <strong>3,49 € vite rentabilisés</strong>
-              <p>Moins cher qu’un café.</p>
-            </article>
-          </div>
-
-          <div class="hero-gallery" aria-hidden="true">
-            <article class="maquette-shell">
-              <div class="maquette-screen">
-                <div class="maquette-status">
-                  <span>21:04</span>
-                  <span>5G</span>
-                </div>
-
-                <div class="maquette-header">
-                  <div>
-                    <div class="maquette-title">Bonjour, Emma</div>
-                    <div class="maquette-subtitle">Lundi 13 janvier 2025</div>
-                  </div>
-                  <div class="maquette-avatar">EM</div>
-                </div>
-
-                <div class="maquette-budget">
-                  <div class="maquette-budget-top">
-                    <div>
-                      <div class="maquette-label">Budget restant</div>
-                      <div class="maquette-value">361 <span>€</span></div>
-                    </div>
-                    <div>
-                      <div class="maquette-pill">18 jours restants</div>
-                      <div class="maquette-meta">sur <strong>950 €</strong> fixés</div>
-                    </div>
-                  </div>
-                  <div class="maquette-progress">
-                    <div class="maquette-progress-fill"></div>
-                  </div>
-                  <div class="maquette-budget-row">
-                    <span><strong>589 €</strong> dépensés</span>
-                    <span><strong>62%</strong> utilisé</span>
-                  </div>
-                </div>
-
-                <div class="maquette-grid">
-                  <div class="maquette-card">
-                    <div class="maquette-card-dot"></div>
-                    <div class="maquette-card-icon" style="background:#fdf2e2;">🛒</div>
-                    <div class="maquette-card-name">Courses</div>
-                    <span class="maquette-card-value">88 €</span>
-                    <div class="maquette-card-sub">sur 100 €</div>
-                  </div>
-                  <div class="maquette-card">
-                    <div class="maquette-card-icon" style="background:#eeeaff;">🎮</div>
-                    <div class="maquette-card-name">Loisirs</div>
-                    <span class="maquette-card-value">51 €</span>
-                    <div class="maquette-card-sub">sur 150 €</div>
-                  </div>
-                  <div class="maquette-card">
-                    <div class="maquette-card-icon" style="background:#e6eefa;">🏠</div>
-                    <div class="maquette-card-name">Loyer</div>
-                    <span class="maquette-card-value">450 €</span>
-                    <div class="maquette-card-sub">fixe</div>
-                  </div>
-                  <div class="maquette-card">
-                    <div class="maquette-card-dot red"></div>
-                    <div class="maquette-card-icon" style="background:#fce8e8;">📦</div>
-                    <div class="maquette-card-name">Divers</div>
-                    <span class="maquette-card-value red">−7 €</span>
-                    <div class="maquette-card-sub">dépassé</div>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <div class="maquette-stack">
-              <article class="maquette-panel">
-                <div class="maquette-panel-title">Épargne</div>
-                <div class="maquette-goal">
-                  <div class="maquette-goal-top">
-                    <div>
-                      <div class="maquette-goal-name">✈️ Vacances Barcelone</div>
-                      <div class="maquette-goal-sub">60 € versés ce mois</div>
-                    </div>
-                    <div class="maquette-goal-pct">60%</div>
-                  </div>
-                  <div class="maquette-goal-bar">
-                    <div class="maquette-goal-fill"></div>
-                  </div>
-                </div>
-              </article>
-
-              <article class="maquette-panel">
-                <div class="maquette-panel-title">Historique</div>
-                <div class="maquette-history">
-                  <div class="maquette-history-item">
-                    <div class="maquette-history-left">
-                      <div class="maquette-history-ico" style="background:#fce8e8;">🍕</div>
-                      <div>
-                        <div class="maquette-history-name">Domino’s Pizza</div>
-                        <div class="maquette-history-meta">Loisirs · carte</div>
-                      </div>
-                    </div>
-                    <div class="maquette-history-amt">−18 €</div>
-                  </div>
-                  <div class="maquette-history-item">
-                    <div class="maquette-history-left">
-                      <div class="maquette-history-ico" style="background:#e6f5ee;">🛒</div>
-                      <div>
-                        <div class="maquette-history-name">Carrefour Market</div>
-                        <div class="maquette-history-meta">Courses · carte</div>
-                      </div>
-                    </div>
-                    <div class="maquette-history-amt">−34 €</div>
-                  </div>
-                </div>
-              </article>
-            </div>
-          </div>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#inscription">Commencer mon essai gratuit — 7 jours offerts</a>
+          <div class="hero-micro">Carte requise · Aucun prélèvement avant J+7 · Résiliation en 1 clic</div>
         </div>
 
-        <div class="buddy-card">
-          <div class="buddy-head">
-            <h3>Simple, claire, utile.</h3>
-          </div>
-          <p class="buddy-copy">
-            Tu ouvres, tu comprends, tu ajustes.
-          </p>
+        <div class="sales-grid">
+          <article class="sales-key">
+            <strong>Vois où ça part</strong>
+            <p>Loyer, courses, sorties.</p>
+          </article>
+          <article class="sales-key">
+            <strong>Sache ce qu’il reste</strong>
+            <p>Tu sais ce que tu peux encore dépenser.</p>
+          </article>
+          <article class="sales-key">
+            <strong>3,49 € vite rentabilisés</strong>
+            <p>Moins qu’un café par semaine.</p>
+          </article>
         </div>
       </article>
 
-      <aside class="signup-card" id="inscription">
-        <div class="signup-head">
-          <div class="auth-switch" role="tablist" aria-label="Choisir un mode">
-            <button type="button" class="is-active" id="mode-signup">S’inscrire</button>
-            <button type="button" id="mode-login">Se connecter</button>
-          </div>
-          <div class="trial-banner">7 jours gratuits pour tester</div>
-          <h3 id="auth-title">Crée ton compte et démarre ton essai</h3>
-          <p id="auth-copy">
-            2 minutes pour commencer.
-          </p>
-        </div>
+      <aside class="hero-card hero-visual-card" aria-hidden="true">
+        <article class="maquette-shell">
+          <div class="maquette-screen">
+            <div class="maquette-status">
+              <span>21:04</span>
+              <span>5G</span>
+            </div>
 
-        <div class="signup-body">
-          <form class="stack" id="signup-form">
-            <div id="name-field">
-              <label class="label" for="signup-name">Prénom et nom</label>
-              <input class="field" id="signup-name" type="text" placeholder="Ex : Emma Martin" autocomplete="name" required>
-            </div>
-            <div id="email-field">
-              <label class="label" for="signup-email">Email</label>
-              <input class="field" id="signup-email" type="email" placeholder="emma@univ.fr" autocomplete="email" required>
-            </div>
-            <div id="password-field">
-              <label class="label" for="signup-password">Mot de passe</label>
-              <input class="field" id="signup-password" type="password" placeholder="8 caractères minimum" autocomplete="new-password" minlength="8" required>
-            </div>
-            <div id="profile-field">
-              <label class="label" for="signup-profile">Ton profil</label>
-              <select class="select" id="signup-profile">
-                <option>Étudiant</option>
-                <option>Alternant</option>
-                <option>Jeune actif</option>
-              </select>
-            </div>
-            <div class="payment-field" id="payment-field">
-              <div class="payment-head">
-                <div class="payment-title">Paiement sécurisé</div>
+            <div class="maquette-header">
+              <div>
+                <div class="maquette-title">Bonjour, Emma</div>
+                <div class="maquette-subtitle">Lundi 13 janvier 2025</div>
               </div>
-
-              <label class="promo-label" for="promo-code">Code promo</label>
-              <input class="field" id="promo-code" type="text" placeholder="Ex : WELCOME14" autocomplete="off">
-              <div class="promo-note">Un code valide peut prolonger l’essai.</div>
+              <div class="maquette-avatar">EM</div>
             </div>
-            <button class="button button-primary" type="submit" id="signup-submit">Tester gratuitement</button>
-          </form>
 
-          <a class="minor-link" href="#" id="forgot-password-link">Mot de passe oublié ?</a>
-
-          <div class="signup-note" id="signup-status">
-            7 jours gratuits. Ensuite 3,49 €/mois.
-          </div>
-
-          <div class="price-box">
-            <div class="price-top">
-              <strong>Ensuite 3,49 €/mois</strong>
-              <div class="price-value">3,49 <span>€/mois</span></div>
+            <div class="maquette-budget">
+              <div class="maquette-budget-top">
+                <div>
+                  <div class="maquette-label">Budget restant</div>
+                  <div class="maquette-value">361 <span>€</span></div>
+                </div>
+                <div>
+                  <div class="maquette-pill">18 jours restants</div>
+                  <div class="maquette-meta">sur <strong>950 €</strong> fixés</div>
+                </div>
+              </div>
+              <div class="maquette-progress">
+                <div class="maquette-progress-fill"></div>
+              </div>
+              <div class="maquette-budget-row">
+                <span><strong>589 €</strong> dépensés</span>
+                <span><strong>62%</strong> utilisé</span>
+              </div>
             </div>
-            <p>
-              Moins qu’un café pour y voir clair.
-            </p>
-            <ul class="price-list">
-              <li>Voir où part ton argent</li>
-              <li>Garder de la marge</li>
-              <li>Fin de mois plus calme</li>
-            </ul>
+
+            <div class="maquette-grid">
+              <div class="maquette-card">
+                <div class="maquette-card-dot"></div>
+                <div class="maquette-card-icon" style="background:#fdf2e2;">🛒</div>
+                <div class="maquette-card-name">Courses</div>
+                <span class="maquette-card-value">88 €</span>
+                <div class="maquette-card-sub">sur 100 €</div>
+              </div>
+              <div class="maquette-card">
+                <div class="maquette-card-icon" style="background:#eeeaff;">🎮</div>
+                <div class="maquette-card-name">Loisirs</div>
+                <span class="maquette-card-value">51 €</span>
+                <div class="maquette-card-sub">sur 150 €</div>
+              </div>
+              <div class="maquette-card">
+                <div class="maquette-card-icon" style="background:#e6eefa;">🏠</div>
+                <div class="maquette-card-name">Loyer</div>
+                <span class="maquette-card-value">450 €</span>
+                <div class="maquette-card-sub">fixe</div>
+              </div>
+              <div class="maquette-card">
+                <div class="maquette-card-dot red"></div>
+                <div class="maquette-card-icon" style="background:#fce8e8;">📦</div>
+                <div class="maquette-card-name">Divers</div>
+                <span class="maquette-card-value red">−7 €</span>
+                <div class="maquette-card-sub">dépassé</div>
+              </div>
+            </div>
           </div>
-        </div>
+        </article>
       </aside>
     </section>
 
@@ -1564,6 +1752,10 @@
           </div>
         </div>
       </div>
+
+      <p class="section-transition">
+        Quand tu vois mieux, tu gères mieux. Budgee te donne cette visibilité en 2 minutes.
+      </p>
     </section>
 
     <section class="section-card">
@@ -1571,81 +1763,60 @@
         <div class="section-kicker">La solution</div>
         <h3>Budgee te simplifie la vie</h3>
         <p>
-          Pas de tableau. Pas de jargon.
+          Pas de tableaux compliqués. Pas de jargon. Juste ce qu’il faut pour piloter ton mois.
         </p>
       </div>
 
       <div class="benefits-grid">
         <article class="benefit">
-          <strong>Vois exactement où part ton argent</strong>
-          <p>Tu vois vite ce qui pèse.</p>
+          <div class="feature-icon">👀</div>
+          <strong>Vois où part ton argent</strong>
+          <p>Tu vois vite ce qui pèse dans ton budget.</p>
         </article>
         <article class="benefit">
-          <strong>Sache combien il te reste pour finir le mois</strong>
-          <p>Tu sais ce que tu peux encore dépenser.</p>
+          <div class="feature-icon">💳</div>
+          <strong>Sache combien il te reste</strong>
+          <p>Tu sais exactement ce que tu peux encore dépenser.</p>
         </article>
         <article class="benefit">
-          <strong>Anticipe au lieu de subir</strong>
-          <p>Tu repères les dépassements plus tôt.</p>
+          <div class="feature-icon">⚠️</div>
+          <strong>Anticipe les dépassements</strong>
+          <p>Tu repères les écarts avant la fin du mois.</p>
         </article>
         <article class="benefit">
-          <strong>Reprends la main simplement</strong>
-          <p>Une interface claire.</p>
+          <div class="feature-icon">🌱</div>
+          <strong>Mets de côté facilement</strong>
+          <p>Même avec un petit budget, tu gardes une marge.</p>
         </article>
       </div>
     </section>
 
     <section class="section-card">
       <div class="section-head">
-        <div class="section-kicker">Les bénéfices concrets</div>
-        <h3>Avec Budgee, tu peux :</h3>
-      </div>
-
-      <div class="benefits-grid">
-        <article class="benefit">
-          <strong>Arrêter les fins de mois stressantes</strong>
-          <p>Tu vois les zones à risque plus tôt.</p>
-        </article>
-        <article class="benefit">
-          <strong>Savoir combien tu peux dépenser sans culpabiliser</strong>
-          <p>Tu dépenses avec un vrai repère.</p>
-        </article>
-        <article class="benefit">
-          <strong>Mettre de côté même avec un petit budget</strong>
-          <p>Tu gardes un peu de marge.</p>
-        </article>
-        <article class="benefit">
-          <strong>Reprendre le contrôle de ton argent</strong>
-          <p>Tu comprends ton mois avant la fin.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section-card">
-      <div class="section-head">
-        <div class="section-kicker">Pourquoi Budgee</div>
-        <h3>Pourquoi Budgee est différent</h3>
+        <div class="section-kicker">Témoignages</div>
+        <h3>Ils voient enfin clair dans leur mois</h3>
         <p>
-          Simple. Rapide. Utile.
+          Exemples de retours à remplacer par de vrais avis au lancement.
         </p>
       </div>
 
-      <div class="benefits-grid">
-        <article class="benefit">
-          <strong>Excel → trop compliqué</strong>
-          <p>Trop long.</p>
+      <div class="testimonials-lead">+2 300 étudiants ont rejoint Budgee</div>
+
+      <div class="testimonials-grid">
+        <article class="testimonial">
+          <blockquote>“Je savais plus du tout où passait mon argent. Là je vois tout d'un coup d'œil.”</blockquote>
+          <div class="testimonial-meta">— Lucas, étudiant en M1</div>
+          <div class="testimonial-stars">★★★★★</div>
         </article>
-        <article class="benefit">
-          <strong>Apps bancaires → pas adaptées aux étudiants</strong>
-          <p>Elles montrent le solde, pas le repère.</p>
+        <article class="testimonial">
+          <blockquote>“En 3 jours j'avais déjà compris pourquoi j'étais toujours à découvert.”</blockquote>
+          <div class="testimonial-meta">— Inès, alternante en BTS</div>
+          <div class="testimonial-stars">★★★★★</div>
         </article>
-        <article class="benefit">
-          <strong>Autres apps → trop complexes</strong>
-          <p>Trop d’options.</p>
-        </article>
-        <article class="benefit">
-          <strong>Budgee → simple, rapide, utile</strong>
-          <p>Tu comprends vite.</p>
+        <article class="testimonial">
+          <blockquote>“3,49 € par mois c'est littéralement rien comparé à ce que je gaspillais.”</blockquote>
+          <div class="testimonial-meta">— Tom, étudiant en L2</div>
+          <div class="testimonial-stars">★★★★★</div>
         </article>
       </div>
     </section>
@@ -1653,82 +1824,147 @@
     <section class="section-card">
       <div class="section-head">
         <div class="section-kicker">Le prix</div>
-        <h3>Un prix accessible</h3>
+        <h3>Un prix fait pour les étudiants</h3>
         <p>
-          Moins qu’un café par semaine.
+          Simple, clair, sans surprise.
         </p>
       </div>
 
-      <div class="benefits-grid">
-        <article class="benefit">
-          <strong>3,49 € / mois</strong>
-          <p>Petit prix, vraie utilité.</p>
-        </article>
-        <article class="benefit">
-          <strong>7 jours gratuits</strong>
-          <p>Tu testes avant de décider.</p>
-        </article>
-        <article class="benefit">
-          <strong>Sans engagement</strong>
-          <p>Tu peux arrêter simplement.</p>
-        </article>
+      <div class="pricing-wrap">
+        <div class="pricing-main">
+          <div class="pricing-value">3,49 <span>€ / mois</span></div>
+          <p class="pricing-sub">Moins qu'un café par semaine.</p>
+        </div>
+
+        <div class="pricing-side">
+          <ul class="guarantees">
+            <li>7 jours gratuits pour tester</li>
+            <li>Sans engagement</li>
+            <li>Résiliation en 1 clic depuis l'app</li>
+            <li>Tes données sont sécurisées</li>
+          </ul>
+
+          <div class="pricing-note">
+            Après tes 7 jours gratuits, tu seras prélevé de 3,49 € automatiquement. Tu peux résilier à tout moment en 1 clic.
+          </div>
+        </div>
       </div>
 
       <div class="section-inline-cta">
-        <div class="section-inline-micro">7 jours gratuits • Sans engagement</div>
+        <a class="button button-primary" href="#inscription">Commencer mon essai gratuit &rarr;</a>
       </div>
     </section>
 
-    <section class="section-card">
-      <div class="section-head">
-        <div class="section-kicker">Rassurant</div>
-        <h3>Tu peux tester sans pression.</h3>
-        <p>
-          Tout est fait pour rester simple.
+    <section class="signup-card" id="inscription">
+      <div class="signup-head">
+        <div class="auth-switch" role="tablist" aria-label="Choisir un mode">
+          <button type="button" class="is-active" id="mode-signup">S’inscrire</button>
+          <button type="button" id="mode-login">Se connecter</button>
+        </div>
+        <div class="trial-banner">7 jours gratuits pour tester</div>
+        <h3 id="auth-title">Commence ton essai Budgee</h3>
+        <p id="auth-copy">
+          Crée ton compte puis démarre ton essai gratuit.
         </p>
       </div>
 
-      <div class="reassurance-grid">
-        <article class="reassurance">
-          <strong>Essai gratuit</strong>
-          <p>Tu découvres avant de décider.</p>
-        </article>
-        <article class="reassurance">
-          <strong>Sans engagement</strong>
-          <p>Tu restes libre.</p>
-        </article>
-        <article class="reassurance">
-          <strong>Résiliation en 1 clic</strong>
-          <p>Tu arrêtes simplement.</p>
-        </article>
-        <article class="reassurance">
-          <strong>Données sécurisées</strong>
-          <p>Ton compte reste protégé.</p>
-        </article>
+      <div class="signup-body">
+        <form class="stack" id="signup-form">
+          <div class="step-card" id="account-step">
+            <div class="step-head">
+              <div class="step-number">1</div>
+              <div>
+                <strong>Ton compte</strong>
+                <p>On commence par les bases.</p>
+              </div>
+            </div>
+
+            <div class="stack">
+              <div id="name-field">
+                <label class="label" for="signup-name">Prénom et nom</label>
+                <input class="field" id="signup-name" type="text" placeholder="Ex : Emma Martin" autocomplete="name" required>
+              </div>
+              <div id="email-field">
+                <label class="label" for="signup-email">Email</label>
+                <input class="field" id="signup-email" type="email" placeholder="emma@univ.fr" autocomplete="email" required>
+              </div>
+              <div id="password-field">
+                <label class="label" for="signup-password">Mot de passe</label>
+                <input class="field" id="signup-password" type="password" placeholder="8 caractères minimum" autocomplete="new-password" minlength="8" required>
+              </div>
+              <div id="profile-field">
+                <label class="label">Ton profil</label>
+                <div class="profile-group">
+                  <label class="profile-option">
+                    <input type="radio" name="signup-profile" value="Étudiant" checked>
+                    <span>Étudiant</span>
+                  </label>
+                  <label class="profile-option">
+                    <input type="radio" name="signup-profile" value="Alternant">
+                    <span>Alternant</span>
+                  </label>
+                  <label class="profile-option">
+                    <input type="radio" name="signup-profile" value="Jeune actif">
+                    <span>Jeune actif</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-card payment-field" id="payment-field">
+            <div class="step-head">
+              <div class="step-number">2</div>
+              <div>
+                <strong>Ton essai gratuit</strong>
+                <p>Ajoute ta carte et, si tu en as un, ton code BDE ou parrain.</p>
+              </div>
+            </div>
+
+            <div class="stripe-card-shell">
+              <div class="stripe-card-top">
+                <div class="stripe-card-title">Carte bancaire (Stripe)</div>
+                <div class="stripe-card-logos">Visa · Mastercard</div>
+              </div>
+              <p>Ta carte est renseignée sur la page sécurisée Stripe après validation.</p>
+            </div>
+
+            <label class="promo-label" for="promo-code">Code BDE ou parrain</label>
+            <input class="field" id="promo-code" type="text" placeholder="Ex : BUDGEE14" autocomplete="off">
+            <div class="promo-note">Un code valide t'offre 7 jours supplémentaires gratuits, soit 14 jours au total.</div>
+          </div>
+
+          <button class="button button-primary" type="submit" id="signup-submit">Commencer mon essai gratuit</button>
+        </form>
+
+        <div class="secure-note" id="secure-note">
+          🔒 Paiement sécurisé par Stripe · Visa · Mastercard<br>
+          Aucun prélèvement pendant 7 jours. Résiliation en 1 clic.
+        </div>
+
+        <a class="minor-link" href="#" id="forgot-password-link">Mot de passe oublié ?</a>
+
+        <div class="signup-note" id="signup-status">
+          7 jours gratuits. Carte requise. Ensuite 3,49 €/mois.
+        </div>
       </div>
     </section>
 
-    <section class="final-cta">
-      <div>
-        <h3>Reprends le contrôle dès aujourd’hui</h3>
-        <p>
-          Teste Budgee 7 jours et vois la différence.
-        </p>
+    <footer class="footer-card">
+      <div class="footer-copy">
+        <h3>Budgee est prêt pour ton essai gratuit.</h3>
+        <p>Commence sur le site, puis retrouve ton budget dans l’app.</p>
       </div>
-      <a class="button button-primary" href="#inscription">Tester gratuitement</a>
-    </section>
 
-    <section class="download" id="download-app">
-      <div>
-        <h3>Télécharger l’app Budgee</h3>
-        <p>
-          Garde ton budget dans la poche.
-        </p>
+      <div class="footer-actions">
+        <a class="button button-secondary" href="https://apps.apple.com/fr/search?term=budgee" target="_blank" rel="noreferrer">Télécharger sur l’App Store</a>
+        <div class="footer-links">
+          <a href="/cgu.html">CGU</a>
+          <a href="/confidentialite.html">Politique de confidentialité</a>
+          <a href="mailto:contact@budgee.app">Contact</a>
+        </div>
       </div>
-      <div class="download-links">
-        <a class="button button-secondary" href="https://apps.apple.com/fr/search?term=budgee" target="_blank" rel="noreferrer">Télécharger l'app</a>
-      </div>
-    </section>
+    </footer>
   </main>
 
   <div class="toast" id="toast">Budgee est prêt pour ton essai gratuit.</div>
@@ -1751,6 +1987,7 @@
     const signupModeButton = document.getElementById('mode-signup');
     const loginModeButton = document.getElementById('mode-login');
     const forgotPasswordLink = document.getElementById('forgot-password-link');
+    const secureNote = document.getElementById('secure-note');
     const pendingSignupStorageKey = 'budgee-pending-signup';
     const supabaseUrl = 'https://wbxcigccadbkzxrmtpqp.supabase.co';
     const supabasePublishableKey = 'sb_publishable_FjCxygFFtvLN8Nt71TAAMA_z56vZ47o';
@@ -1908,29 +2145,30 @@
       nameField.classList.toggle('hidden-field', !isSignup);
       emailField.classList.toggle('hidden-field', isRecovery);
       profileField.classList.toggle('hidden-field', !isSignup);
-      paymentField.classList.toggle('is-hidden', isRecovery);
+      paymentField.classList.toggle('is-hidden', !isSignup);
+      secureNote.style.display = isSignup ? 'block' : 'none';
       document.getElementById('signup-name').required = isSignup;
       document.getElementById('signup-email').required = !isRecovery;
       document.getElementById('signup-password').autocomplete = isSignup || isRecovery ? 'new-password' : 'current-password';
       submitButton.textContent = isSignup
-        ? 'Tester gratuitement'
+        ? 'Commencer mon essai gratuit'
         : isRecovery
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
       authTitle.textContent = isSignup
-        ? 'Crée ton compte et démarre ton essai'
+        ? 'Commence ton essai Budgee'
         : isRecovery
           ? 'Choisis un nouveau mot de passe'
           : 'Connecte-toi et retrouve ton budget';
       authCopy.textContent = isSignup
-        ? "2 minutes pour commencer."
+        ? "Crée ton compte puis démarre ton essai gratuit."
         : isRecovery
           ? "Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Budgee."
           : "Connecte-toi pour retrouver ton budget.";
       forgotPasswordLink.style.display = isRecovery ? 'none' : 'inline-flex';
       setStatus(
         isSignup
-          ? "7 jours gratuits. Ensuite 3,49 €/mois."
+          ? "7 jours gratuits. Carte requise. Ensuite 3,49 €/mois."
           : isRecovery
             ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
             : "Connecte-toi pour reprendre ton budget.",
@@ -1976,7 +2214,7 @@
       const name = document.getElementById('signup-name').value.trim();
       const email = document.getElementById('signup-email').value.trim().toLowerCase();
       const password = document.getElementById('signup-password').value;
-      const profileType = document.getElementById('signup-profile').value;
+      const profileType = document.querySelector('input[name="signup-profile"]:checked')?.value ?? '';
       const promoCode = promoCodeField.value.trim();
 
       if ((!email && authMode !== 'recovery') || !password || (authMode === 'signup' && !name)) {
@@ -2020,7 +2258,7 @@
         if (!redirectTo) {
           submitButton.disabled = false;
           submitButton.style.opacity = '1';
-          submitButton.textContent = 'Tester gratuitement';
+          submitButton.textContent = 'Commencer mon essai gratuit';
           const message = "Pour créer un compte avec email de confirmation, ouvre d’abord le site via localhost ou une vraie URL web.";
           setStatus(message, 'error');
           showToast('Ouvre le site via localhost');
@@ -2056,7 +2294,7 @@
       submitButton.disabled = false;
       submitButton.style.opacity = '1';
       submitButton.textContent = authMode === 'signup'
-        ? 'Tester gratuitement'
+        ? 'Commencer mon essai gratuit'
         : authMode === 'recovery'
           ? 'Mettre à jour mon mot de passe'
           : 'Je me connecte';
