@@ -41,15 +41,19 @@ type BridgeResponse<T> = {
 };
 
 function getSiteUrl(request: NextRequest) {
+  const protocol = request.headers.get('x-forwarded-proto') ?? 'https';
+  const host = request.headers.get('host');
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
   const explicitUrl = process.env.SITE_URL?.trim();
 
   if (explicitUrl) {
     return explicitUrl.replace(/\/$/, '');
   }
 
-  const protocol = request.headers.get('x-forwarded-proto') ?? 'https';
-  const host = request.headers.get('host');
-  return host ? `${protocol}://${host}` : 'https://budgeeapp.vercel.app';
+  return 'https://budgeeapp.vercel.app';
 }
 
 async function parseBridgeResponse<T>(response: Response): Promise<BridgeResponse<T>> {
