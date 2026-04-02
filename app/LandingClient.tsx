@@ -9,6 +9,8 @@ const supabaseUrl = 'https://wbxcigccadbkzxrmtpqp.supabase.co';
 const supabasePublishableKey = 'sb_publishable_FjCxygFFtvLN8Nt71TAAMA_z56vZ47o';
 const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const pendingSignupStorageKey = 'budgee-pending-signup';
+const budgeeAppUrl = 'budgee://';
+const budgeeAppStoreUrl = 'https://apps.apple.com/fr/search?term=budgee';
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
@@ -166,12 +168,14 @@ export default function LandingClient() {
   );
   const [toastVisible, setToastVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAppActions, setShowAppActions] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [profileType, setProfileType] = useState('Étudiant');
   const [promoCode, setPromoCode] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSignup = authMode === 'signup';
   const isRecovery = authMode === 'recovery';
@@ -194,8 +198,24 @@ export default function LandingClient() {
     setStatusVariant(variant);
   }
 
+  function openBudgeeAppWithFallback() {
+    setShowAppActions(true);
+
+    if (appRedirectTimer.current) {
+      clearTimeout(appRedirectTimer.current);
+    }
+
+    window.location.href = budgeeAppUrl;
+    appRedirectTimer.current = setTimeout(() => {
+      if (document.visibilityState === 'visible') {
+        window.location.href = budgeeAppStoreUrl;
+      }
+    }, 1400);
+  }
+
   function setAuthMode(mode: AuthMode) {
     setAuthModeState(mode);
+    setShowAppActions(false);
 
     setStatus(
       mode === 'signup'
@@ -339,6 +359,7 @@ export default function LandingClient() {
 
       if (!data?.session) {
         setAuthModeState('login');
+        setShowAppActions(false);
         setStatus(
           "Compte créé. Vérifie ton email : après confirmation, Budgee t’enverra vers le paiement sécurisé.",
           'success',
@@ -376,6 +397,7 @@ export default function LandingClient() {
       setProfileType('Étudiant');
       setPromoCode('');
       setAuthModeState('login');
+      setShowAppActions(false);
       setStatus(
         'Mot de passe mis à jour. Tu peux maintenant te connecter avec ton nouveau mot de passe.',
         'success',
@@ -389,6 +411,7 @@ export default function LandingClient() {
       const currentSubscription = await fetchCurrentSubscription(sessionUserId);
 
       if (hasSubscriptionAccess(currentSubscription)) {
+        setShowAppActions(true);
         setStatus(
           'Connexion réussie. Ton accès Budgee est actif, tu peux ouvrir l’app.',
           'success',
@@ -433,13 +456,19 @@ export default function LandingClient() {
       if (searchParams.get('checkout') === 'success') {
         clearPendingSignup();
         setAuthModeState('login');
+        setShowAppActions(true);
         setStatus(
-          "Paiement enregistré. Si ton email n’est pas encore confirmé, valide-le puis connecte-toi dans l’app Budgee.",
+          'Paiement enregistré. On ouvre maintenant l’app Budgee. Si elle n’est pas installée, on te propose juste après de la télécharger.',
           'success',
         );
         showToast('Essai Budgee activé');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.setTimeout(() => {
+          openBudgeeAppWithFallback();
+        }, 250);
       } else if (searchParams.get('checkout') === 'cancel') {
         setAuthModeState('login');
+        setShowAppActions(false);
         setStatus(
           'Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Budgee.',
           'error',
@@ -463,6 +492,7 @@ export default function LandingClient() {
 
           if (hasSubscriptionAccess(currentSubscription)) {
             clearPendingSignup();
+            setShowAppActions(true);
             setStatus(
               'Tu es connectée. Ton accès Budgee est actif, tu peux ouvrir l’app.',
               'success',
@@ -495,6 +525,7 @@ export default function LandingClient() {
               });
               clearPendingSignup();
             } else {
+              setShowAppActions(false);
               setStatus(
                 'Tu es connectée. Termine le paiement sécurisé pour démarrer ton essai Budgee.',
                 'info',
@@ -518,6 +549,7 @@ export default function LandingClient() {
 
         if (hasAuthParams) {
           setAuthModeState('login');
+          setShowAppActions(false);
           setStatus(
             'Email confirmé. Tu peux maintenant te connecter avec ton compte Budgee.',
             'success',
@@ -532,6 +564,9 @@ export default function LandingClient() {
     return () => {
       if (toastTimer.current) {
         clearTimeout(toastTimer.current);
+      }
+      if (appRedirectTimer.current) {
+        clearTimeout(appRedirectTimer.current);
       }
     };
   }, []);
@@ -1155,6 +1190,59 @@ export default function LandingClient() {
           >
             {statusMessage}
           </div>
+
+          {showAppActions && (
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '10px',
+                marginTop: '12px',
+              }}
+            >
+              <a
+                href={budgeeAppUrl}
+                onClick={(event) => {
+                  event.preventDefault();
+                  openBudgeeAppWithFallback();
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '12px 18px',
+                  borderRadius: '999px',
+                  background: 'var(--blue)',
+                  color: '#fff',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 800,
+                }}
+              >
+                Ouvrir l&apos;app Budgee
+              </a>
+              <a
+                href={budgeeAppStoreUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '12px 18px',
+                  borderRadius: '999px',
+                  border: '1px solid var(--line)',
+                  background: 'rgba(255,255,255,0.8)',
+                  color: 'var(--text)',
+                  textDecoration: 'none',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                }}
+              >
+                Télécharger l&apos;app iOS
+              </a>
+            </div>
+          )}
         </section>
 
         <footer className="card footer">
