@@ -103,6 +103,57 @@ async function launchCheckout({
   window.location.href = payload.url;
 }
 
+async function confirmCheckoutSession(sessionId: string) {
+  const response = await fetch('/api/stripe/confirm-checkout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sessionId,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      payload.error || 'Le paiement est revenu, mais Budgee n’a pas encore confirmé ton essai.',
+    );
+  }
+
+  return payload;
+}
+
+async function syncStripeAccess({
+  userId,
+  email,
+}: {
+  userId: string;
+  email: string;
+}) {
+  const response = await fetch('/api/stripe/sync-access', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      userId,
+      email,
+    }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(
+      payload.error || 'Impossible de vérifier ton essai Budgee pour le moment.',
+    );
+  }
+
+  return payload.subscription ?? null;
+}
+
 function getAuthParams() {
   const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
   const search = new URLSearchParams(window.location.search);
@@ -408,7 +459,14 @@ export default function LandingClient() {
 
     try {
       const sessionUserId = data?.session?.user?.id ?? '';
-      const currentSubscription = await fetchCurrentSubscription(sessionUserId);
+      let currentSubscription = await fetchCurrentSubscription(sessionUserId);
+
+      if (!hasSubscriptionAccess(currentSubscription) && sessionUserId) {
+        currentSubscription = await syncStripeAccess({
+          userId: sessionUserId,
+          email: data?.session?.user?.email ?? normalizedEmail,
+        });
+      }
 
       if (hasSubscriptionAccess(currentSubscription)) {
         setShowAppActions(true);
@@ -451,9 +509,13 @@ export default function LandingClient() {
     async function init() {
       const authParams = getAuthParams();
       const searchParams = new URLSearchParams(window.location.search);
+      const checkoutSessionId = searchParams.get('session_id');
       const { data: sessionData } = await supabase.auth.getSession();
 
       if (searchParams.get('checkout') === 'success') {
+        if (checkoutSessionId) {
+          await confirmCheckoutSession(checkoutSessionId);
+        }
         clearPendingSignup();
         setAuthModeState('login');
         setShowAppActions(true);
@@ -486,9 +548,19 @@ export default function LandingClient() {
         setAuthModeState('login');
 
         try {
-          const currentSubscription = await fetchCurrentSubscription(
+          let currentSubscription = await fetchCurrentSubscription(
             sessionData.session.user.id,
           );
+
+          if (
+            !hasSubscriptionAccess(currentSubscription) &&
+            sessionData.session.user.id
+          ) {
+            currentSubscription = await syncStripeAccess({
+              userId: sessionData.session.user.id,
+              email: sessionData.session.user.email ?? '',
+            });
+          }
 
           if (hasSubscriptionAccess(currentSubscription)) {
             clearPendingSignup();
