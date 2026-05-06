@@ -2,11 +2,12 @@
 
 // MIGRATED FROM: index.html
 import { createClient } from '@supabase/supabase-js';
+import { Eye, EyeOff } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-const supabaseUrl = 'https://wbxcigccadbkzxrmtpqp.supabase.co';
-const supabasePublishableKey = 'sb_publishable_FjCxygFFtvLN8Nt71TAAMA_z56vZ47o';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const pendingSignupStorageKey = 'budgee-pending-signup';
 const budgeeAppUrl = 'budgee://';
@@ -208,10 +209,28 @@ function getPendingSignupForEmail(email: string) {
   return pendingSignup.email === email.toLowerCase() ? pendingSignup : null;
 }
 
+async function activateBetaTrial({ userId }: { userId: string }) {
+  const response = await fetch('/api/activate-beta-trial', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ userId }),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || 'Impossible d’activer ton essai gratuit pour le moment.');
+  }
+
+  return payload;
+}
+
 export default function LandingClient() {
   const [authMode, setAuthModeState] = useState<AuthMode>('signup');
   const [statusMessage, setStatusMessage] = useState(
-    '7 jours gratuits. Carte requise. Ensuite 3,49 €/mois.',
+    '7 jours gratuits sans carte. Accès immédiat à l’app.',
   );
   const [statusVariant, setStatusVariant] = useState<StatusVariant>('info');
   const [toastMessage, setToastMessage] = useState(
@@ -225,6 +244,7 @@ export default function LandingClient() {
   const [password, setPassword] = useState('');
   const [profileType, setProfileType] = useState('Étudiant');
   const [promoCode, setPromoCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const appRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -270,7 +290,7 @@ export default function LandingClient() {
 
     setStatus(
       mode === 'signup'
-        ? '7 jours gratuits. Carte requise. Ensuite 3,49 €/mois.'
+        ? '7 jours gratuits sans carte. Accès immédiat à l’app.'
         : mode === 'recovery'
           ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
           : 'Connecte-toi pour reprendre ton budget.',
@@ -412,7 +432,7 @@ export default function LandingClient() {
         setAuthModeState('login');
         setShowAppActions(false);
         setStatus(
-          "Compte créé. Vérifie ton email : après confirmation, Budgee t’enverra vers le paiement sécurisé.",
+          "Compte créé. Vérifie ton email : après confirmation, ton essai gratuit de 7 jours sera activé immédiatement.",
           'success',
         );
         showToast('Email de confirmation envoyé');
@@ -420,23 +440,28 @@ export default function LandingClient() {
       }
 
       try {
-        setStatus('Compte créé. Redirection vers le paiement sécurisé...', 'info');
-        await launchCheckout({
+        setStatus('Compte créé. Activation de ton accès gratuit...', 'info');
+        await activateBetaTrial({
           userId: data.user?.id ?? '',
-          email: normalizedEmail,
-          fullName: normalizedName,
-          profileType,
-          promoCode: normalizedPromoCode,
         });
-        clearPendingSignup();
-      } catch (checkoutError) {
+        
+        setAuthModeState('login');
+        setShowAppActions(true);
         setStatus(
-          checkoutError instanceof Error
-            ? checkoutError.message
-            : 'Compte créé, mais le paiement sécurisé est indisponible pour le moment.',
+          'Ton essai gratuit de 7 jours est activé ! Tu peux maintenant ouvrir l’app Budgee pour commencer.',
+          'success',
+        );
+        showToast('Essai Budgee activé');
+        openBudgeeAppWithFallback();
+        clearPendingSignup();
+      } catch (betaError) {
+        setStatus(
+          betaError instanceof Error
+            ? betaError.message
+            : 'Compte créé, mais l’essai gratuit n’a pas pu être activé automatiquement.',
           'error',
         );
-        showToast('Paiement indisponible');
+        showToast('Activation impossible');
       }
       return;
     }
@@ -478,13 +503,27 @@ export default function LandingClient() {
         return;
       }
 
+      // Si pas de souscription du tout ou essai beta expiré
+      if (!currentSubscription) {
+        setStatus('Connexion réussie. Activation de ton essai gratuit de 7 jours...', 'info');
+        await activateBetaTrial({ userId: sessionUserId });
+        setShowAppActions(true);
+        setStatus(
+          'Ton essai gratuit de 7 jours est activé ! Tu peux maintenant ouvrir l’app.',
+          'success',
+        );
+        showToast('Essai activé');
+        openBudgeeAppWithFallback();
+        return;
+      }
+
       const userMetadata =
         (data?.session?.user?.user_metadata as
           | { name?: string; profile_type?: string }
           | undefined) ?? undefined;
 
       setStatus(
-        'Connexion réussie. On te redirige vers le paiement sécurisé pour démarrer ton essai.',
+        'Ton essai est terminé. On te redirige vers le paiement sécurisé pour continuer.',
         'info',
       );
       await launchCheckout({
@@ -494,14 +533,14 @@ export default function LandingClient() {
         profileType: userMetadata?.profile_type ?? '',
         promoCode: normalizedPromoCode,
       });
-    } catch (checkoutError) {
+    } catch (error) {
       setStatus(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : 'Connexion réussie, mais le paiement sécurisé est indisponible pour le moment.',
+        error instanceof Error
+          ? error.message
+          : 'Action impossible pour le moment.',
         'error',
       );
-      showToast('Paiement indisponible');
+      showToast('Erreur de connexion');
     }
   }
 
@@ -562,6 +601,17 @@ export default function LandingClient() {
             });
           }
 
+          // On vérifie si on vient d'une confirmation d'email (via URL ou localStorage)
+          const pendingSignup = getPendingSignupForEmail(
+            sessionData.session.user.email ?? '',
+          );
+          const isConfirmingEmail =
+            authParams.hasAccessToken ||
+            authParams.hasCode ||
+            authParams.hashType === 'signup' ||
+            authParams.searchType === 'signup' ||
+            Boolean(pendingSignup);
+
           if (hasSubscriptionAccess(currentSubscription)) {
             clearPendingSignup();
             setShowAppActions(true);
@@ -569,33 +619,27 @@ export default function LandingClient() {
               'Tu es connectée. Ton accès Budgee est actif, tu peux ouvrir l’app.',
               'success',
             );
+
+            // Si on vient de confirmer l'email, on redirige automatiquement vers l'app
+            if (isConfirmingEmail) {
+              showToast('Bienvenue sur Budgee !');
+              openBudgeeAppWithFallback();
+            }
           } else {
-            const pendingSignup = getPendingSignupForEmail(
-              sessionData.session.user.email ?? '',
-            );
-            const shouldAutoCheckout =
-              authParams.hasAccessToken ||
-              authParams.hasCode ||
-              authParams.hashType === 'signup' ||
-              authParams.searchType === 'signup' ||
-              Boolean(pendingSignup);
-
-            if (shouldAutoCheckout) {
-              const userMetadata =
-                (sessionData.session.user.user_metadata as
-                  | { name?: string; profile_type?: string }
-                  | undefined) ?? undefined;
-
-              setStatus('Email confirmé. Redirection vers le paiement sécurisé...', 'info');
-              await launchCheckout({
+            if (isConfirmingEmail) {
+              setStatus('Email confirmé. Activation de ton essai gratuit de 7 jours...', 'info');
+              await activateBetaTrial({
                 userId: sessionData.session.user.id,
-                email: sessionData.session.user.email ?? '',
-                fullName: pendingSignup?.fullName ?? userMetadata?.name ?? '',
-                profileType:
-                  pendingSignup?.profileType ?? userMetadata?.profile_type ?? '',
-                promoCode: pendingSignup?.promoCode ?? '',
               });
+
+              setShowAppActions(true);
+              setStatus(
+                'Ton essai gratuit de 7 jours est activé ! Bienvenue sur Budgee.',
+                'success',
+              );
+              showToast('Essai activé');
               clearPendingSignup();
+              openBudgeeAppWithFallback();
             } else {
               setShowAppActions(false);
               setStatus(
@@ -1110,15 +1154,16 @@ export default function LandingClient() {
                     required={!isRecovery}
                   />
                 </div>
-                <div>
+                <div style={{ position: 'relative' }}>
                   <label className="field-label" htmlFor="f-pwd">
                     Mot de passe
                   </label>
                   <input
                     className="field"
                     id="f-pwd"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="8 caractères minimum"
+                    style={{ paddingRight: '45px' }}
                     autoComplete={
                       isSignup || isRecovery ? 'new-password' : 'current-password'
                     }
@@ -1127,6 +1172,29 @@ export default function LandingClient() {
                     minLength={8}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      bottom: '12px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0.5,
+                    }}
+                    aria-label={showPassword ? 'Masquer' : 'Afficher'}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} />
+                    ) : (
+                      <Eye size={20} />
+                    )}
+                  </button>
                 </div>
                 <div id="profile-wrap" className={!isSignup ? 'hidden-field' : ''}>
                   <label className="field-label">Ton profil</label>
