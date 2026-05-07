@@ -117,14 +117,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const trialDays =
+    let trialDays =
       normalizedPromoCode && bdePromoCode && normalizedPromoCode === bdePromoCode ? 14 : 7;
+
+    // Si l'utilisateur a déjà eu un essai en base, on ne lui en redonne pas un sur Stripe
+    if (admin) {
+      const { data: existingSubs } = await admin
+        .from('subscriptions')
+        .select('id')
+        .eq('user_id', userId);
+      
+      if (existingSubs && existingSubs.length > 0) {
+        trialDays = 0;
+      }
+    }
+
     const customerId = await getOrCreateStripeCustomer({
       userId,
       email,
       fullName,
     });
     const siteUrl = getSiteUrl(request);
+
+    const subscriptionData: any = {
+      metadata: {
+        user_id: userId,
+        email,
+        profile_type: profileType,
+        promo_code: normalizedPromoCode,
+        trial_days: String(trialDays),
+      },
+    };
+
+    if (trialDays > 0) {
+      subscriptionData.trial_period_days = trialDays;
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -138,16 +165,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      subscription_data: {
-        trial_period_days: trialDays,
-        metadata: {
-          user_id: userId,
-          email,
-          profile_type: profileType,
-          promo_code: normalizedPromoCode,
-          trial_days: String(trialDays),
-        },
-      },
+      subscription_data: subscriptionData,
       metadata: {
         user_id: userId,
         email,

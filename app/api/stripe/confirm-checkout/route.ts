@@ -185,6 +185,15 @@ async function syncSubscriptionRecord({
 
   await upsertPaymentMethod(userId, subscription.default_payment_method);
 
+  // Ajout d'une ligne dans l'historique de facturation
+  await admin.from('billing_records').insert({
+    user_id: userId,
+    label: `Abonnement Budgee (${(subscription.currency ?? 'eur').toUpperCase()})`,
+    amount: (subscription.items.data[0]?.price.unit_amount ?? 0) / 100,
+    status: 'success',
+    billed_at: fromUnix(subscription.current_period_start)
+  });
+
   return result.data ?? null;
 }
 

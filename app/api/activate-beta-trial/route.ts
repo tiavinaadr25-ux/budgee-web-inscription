@@ -71,36 +71,33 @@ export async function POST(request: NextRequest) {
     trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
     // Création de l'abonnement "Beta" dans la base
-    // On essaie d'abord d'insérer, si ça échoue on pourra logger plus précisément
-    const { data: existingSub } = await admin
+    // On ne permet l'activation QUE si l'utilisateur n'a pas encore d'abonnement
+    // On ne permet l'activation QUE si l'utilisateur n'a ABSOLUMENT AUCUN abonnement
+    const { data: existingSubs } = await admin
       .from('subscriptions')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
+      .select('id, status, trial_ends_at')
+      .eq('user_id', userId);
 
-    let dbResult;
-
-    if (existingSub) {
-      dbResult = await admin
-        .from('subscriptions')
-        .update({
-          status: 'trialing',
-          trial_ends_at: trialEndsAt.toISOString(),
-          provider: 'beta'
-        })
-        .eq('id', existingSub.id);
-    } else {
-      dbResult = await admin
-        .from('subscriptions')
-        .insert({
-          user_id: userId,
-          status: 'trialing',
-          trial_ends_at: trialEndsAt.toISOString(),
-          provider: 'beta',
-          price_amount: 3.49,
-          currency: 'EUR'
-        });
+    if (existingSubs && existingSubs.length > 0) {
+      // On récupère le plus récent pour renvoyer la date actuelle
+      const latestSub = existingSubs.sort((a, b) => b.id - a.id)[0]; 
+      return NextResponse.json({ 
+        ok: true, 
+        message: 'Un essai existe déjà pour ce compte.',
+        trialEndsAt: latestSub.trial_ends_at 
+      }, { headers: corsHeaders });
     }
+
+    const dbResult = await admin
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        status: 'trialing',
+        trial_ends_at: trialEndsAt.toISOString(),
+        provider: 'beta',
+        price_amount: 3.49,
+        currency: 'EUR'
+      });
 
     if (dbResult.error) {
       console.error('Database Error:', dbResult.error);

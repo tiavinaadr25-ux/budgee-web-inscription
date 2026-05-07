@@ -11,7 +11,7 @@ const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const pendingSignupStorageKey = 'budgee-pending-signup';
 const budgeeAppUrl = 'budgee://';
-const budgeeAppStoreUrl = 'https://apps.apple.com/fr/search?term=budgee';
+const budgeeAppStoreUrl = process.env.NEXT_PUBLIC_APP_STORE_URL;
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
@@ -27,27 +27,41 @@ function hasSubscriptionAccess(
   subscription:
     | {
         status: string;
+        trial_ends_at: string | null;
         current_period_end_at: string | null;
       }
     | null
     | undefined,
 ) {
   if (!subscription) {
+
     return false;
   }
 
-  if (subscription.status === 'trialing' || subscription.status === 'active') {
-    return true;
-  }
+  const now = Date.now();
+  let result = false;
 
-  if (
+  if (subscription.status === 'trialing') {
+    if (!subscription.trial_ends_at) {
+      result = true;
+    } else {
+      const expirationDate = new Date(subscription.trial_ends_at).getTime();
+      result = expirationDate > now;
+
+    }
+  } else if (subscription.status === 'active') {
+    result = true;
+  } else if (
     (subscription.status === 'past_due' || subscription.status === 'canceled') &&
     subscription.current_period_end_at
   ) {
-    return new Date(subscription.current_period_end_at).getTime() > Date.now();
+    const expirationDate = new Date(subscription.current_period_end_at).getTime();
+    result = expirationDate > now;
+
   }
 
-  return false;
+
+  return result;
 }
 
 async function fetchCurrentSubscription(userId: string) {
@@ -58,6 +72,8 @@ async function fetchCurrentSubscription(userId: string) {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
+
+
 
   if (error) {
     throw error;
@@ -505,22 +521,27 @@ export default function LandingClient() {
 
       // Si pas de souscription du tout ou essai beta expiré
       if (!currentSubscription) {
+
         setStatus('Connexion réussie. Activation de ton essai gratuit de 7 jours...', 'info');
-        await activateBetaTrial({ userId: sessionUserId });
-        setShowAppActions(true);
-        setStatus(
-          'Ton essai gratuit de 7 jours est activé ! Tu peux maintenant ouvrir l’app.',
-          'success',
-        );
-        showToast('Essai activé');
-        openBudgeeAppWithFallback();
-        return;
+        const trialResult = await activateBetaTrial({ userId: sessionUserId });
+
+        
+        if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
+          setShowAppActions(true);
+          setStatus(
+            'Félicitations ! Ton essai gratuit de 7 jours est activé. Tu peux ouvrir l’app.',
+            'success',
+          );
+          showToast('Essai gratuit activé !');
+          return;
+        }
       }
 
       const userMetadata =
         (data?.session?.user?.user_metadata as
           | { name?: string; profile_type?: string }
           | undefined) ?? undefined;
+
 
       setStatus(
         'Ton essai est terminé. On te redirige vers le paiement sécurisé pour continuer.',
@@ -626,24 +647,34 @@ export default function LandingClient() {
               openBudgeeAppWithFallback();
             }
           } else {
-            if (isConfirmingEmail) {
+            // L'utilisateur est connecté mais n'a pas d'accès valide
+            if (isConfirmingEmail && !currentSubscription) {
               setStatus('Email confirmé. Activation de ton essai gratuit de 7 jours...', 'info');
-              await activateBetaTrial({
+              const trialResult = await activateBetaTrial({
                 userId: sessionData.session.user.id,
               });
 
-              setShowAppActions(true);
-              setStatus(
-                'Ton essai gratuit de 7 jours est activé ! Bienvenue sur Budgee.',
+              if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
+                setShowAppActions(true);
+                setStatus(
+                'Félicitations ! Ton abonnement Budgee est actif. Bienvenue dans l’aventure !',
                 'success',
               );
-              showToast('Essai activé');
-              clearPendingSignup();
-              openBudgeeAppWithFallback();
+              showToast('Abonnement activé !');
+                clearPendingSignup();
+                openBudgeeAppWithFallback();
+              } else {
+                // Si l'activation a échoué (déjà eu un essai), on redirige vers le paiement
+                setStatus(
+                  'Email confirmé. Ton essai est terminé, abonne-toi pour continuer.',
+                  'info',
+                );
+                setShowAppActions(false);
+              }
             } else {
               setShowAppActions(false);
               setStatus(
-                'Tu es connectée. Termine le paiement sécurisé pour démarrer ton essai Budgee.',
+                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer.',
                 'info',
               );
             }

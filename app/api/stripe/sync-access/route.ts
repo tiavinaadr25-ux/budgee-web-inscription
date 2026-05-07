@@ -110,26 +110,31 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
     trial_end: number | null;
   };
 
-  const result = await admin
-    .from('subscriptions')
-    .upsert(
-      {
-        user_id: userId,
-        provider: 'stripe',
-        provider_customer_id:
-          typeof subscription.customer === 'string' ? subscription.customer : null,
-        provider_subscription_id: subscription.id,
-        status: normalizeSubscriptionStatus(subscription.status),
-        price_amount: 3.49,
-        currency: (subscription.currency ?? 'eur').toUpperCase(),
-        trial_ends_at: fromUnix(subscription.trial_end),
-        current_period_end_at: fromUnix(subscription.current_period_end),
-        cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
-      },
-      { onConflict: 'provider_subscription_id' },
-    )
-    .select('id, status, trial_ends_at, current_period_end_at, cancel_at_period_end')
-    .maybeSingle();
+    // PROTECTION CRUCIALE : On ne synchronise Stripe que si l'abonnement est PAYÉ (active).
+    // On ignore les états 'trialing' de Stripe car nous gérons l'essai localement.
+    // Cela empêche d'anciens tests Stripe de "tricher" et de déverrouiller l'app.
+    if (subscription.status !== 'active') {
+
+      return null;
+    }
+
+    const syncData: any = {
+      user_id: userId,
+      provider: 'stripe',
+      provider_customer_id: typeof subscription.customer === 'string' ? subscription.customer : null,
+      provider_subscription_id: subscription.id,
+      status: 'active', // On sait qu'il est actif ici
+      price_amount: 3.49,
+      currency: (subscription.currency ?? 'eur').toUpperCase(),
+      current_period_end_at: fromUnix(subscription.current_period_end),
+      cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+    };
+
+    const result = await admin
+      .from('subscriptions')
+      .upsert(syncData, { onConflict: 'provider_subscription_id' })
+      .select('id, status, trial_ends_at, current_period_end_at, cancel_at_period_end')
+      .maybeSingle();
 
   if (result.error) {
     throw result.error;
