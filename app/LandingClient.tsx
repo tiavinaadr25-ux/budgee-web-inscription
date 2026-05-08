@@ -509,6 +509,7 @@ export default function LandingClient() {
     try {
       const sessionUserId = data?.session?.user?.id ?? '';
       let currentSubscription = await fetchCurrentSubscription(sessionUserId);
+      const hadSubscriptionBefore = currentSubscription !== null;
 
       if (!hasSubscriptionAccess(currentSubscription) && sessionUserId) {
         currentSubscription = await syncStripeAccess({
@@ -527,8 +528,8 @@ export default function LandingClient() {
         return;
       }
 
-      // Si pas de souscription du tout ou essai beta expiré
-      if (!currentSubscription) {
+      // Créer un essai UNIQUEMENT si l'utilisateur n'a JAMAIS eu d'abonnement
+      if (!hadSubscriptionBefore && !currentSubscription) {
 
         setStatus('Connexion réussie. Activation de ton essai gratuit de 7 jours...', 'info');
         const trialResult = await activateBetaTrial({ userId: sessionUserId });
