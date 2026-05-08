@@ -11,7 +11,15 @@ const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabasePublishableKey);
 const pendingSignupStorageKey = 'budgee-pending-signup';
 const budgeeAppUrl = 'budgee://';
-const budgeeAppStoreUrl = process.env.NEXT_PUBLIC_APP_STORE_URL;
+const iosStoreUrl = process.env.NEXT_PUBLIC_IOS_STORE_URL || '';
+const androidStoreUrl = process.env.NEXT_PUBLIC_ANDROID_STORE_URL || '';
+
+function getAppStoreUrl(): string {
+  if (typeof navigator === 'undefined') return iosStoreUrl;
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/i.test(ua)) return androidStoreUrl;
+  return iosStoreUrl;
+}
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
@@ -295,7 +303,7 @@ export default function LandingClient() {
     window.location.href = budgeeAppUrl;
     appRedirectTimer.current = setTimeout(() => {
       if (document.visibilityState === 'visible') {
-        window.location.href = budgeeAppStoreUrl;
+        window.location.href = getAppStoreUrl();
       }
     }, 1400);
   }
@@ -1393,7 +1401,7 @@ export default function LandingClient() {
                 Ouvrir l&apos;app Budgee
               </a>
               <a
-                href={budgeeAppStoreUrl}
+                href={getAppStoreUrl()}
                 target="_blank"
                 rel="noreferrer"
                 style={{
