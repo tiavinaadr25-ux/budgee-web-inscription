@@ -160,7 +160,7 @@ async function syncSubscriptionRecord({ userId, subscriptionId, customerId }) {
         provider_customer_id: typeof subscription.customer === 'string' ? subscription.customer : customerId,
         provider_subscription_id: subscription.id,
         status: normalizeSubscriptionStatus(subscription.status),
-        price_amount: 3.49,
+        price_amount: 1.99,
         currency: (subscription.currency ?? 'eur').toUpperCase(),
         trial_ends_at: fromUnix(subscription.trial_end),
         current_period_end_at: fromUnix(subscription.current_period_end),

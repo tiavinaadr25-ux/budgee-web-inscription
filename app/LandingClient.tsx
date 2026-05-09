@@ -784,7 +784,7 @@ export default function LandingClient() {
           </a>
           <div className="nav-actions">
             <a
-              href="https://apps.apple.com/fr/search?term=budgee"
+              href={process.env.NEXT_PUBLIC_IOS_STORE_URL || '#'}
               className="nav-app-link"
               target="_blank"
               rel="noreferrer"

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const bridgeClientId = process.env.BRIDGE_CLIENT_ID;
 const bridgeClientSecret = process.env.BRIDGE_CLIENT_SECRET;
-const bridgeVersion = process.env.BRIDGE_VERSION?.trim() || '2025-01-15';
+const bridgeVersion = process.env.BRIDGE_VERSION?.trim() || '';
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
