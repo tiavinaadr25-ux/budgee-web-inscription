@@ -110,11 +110,13 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
     trial_end: number | null;
   };
 
-    // PROTECTION CRUCIALE : On ne synchronise Stripe que si l'abonnement est PAYÉ (active).
-    // On ignore les états 'trialing' de Stripe car nous gérons l'essai localement.
-    // Cela empêche d'anciens tests Stripe de "tricher" et de déverrouiller l'app.
-    if (subscription.status !== 'active') {
+    // Synchroniser le mode de paiement et l'historique avant de vérifier le statut d'accès
+    await upsertPaymentMethod(userId, subscription.default_payment_method);
+    if (typeof subscription.customer === 'string') {
+      await syncBillingRecords(userId, subscription.customer);
+    }
 
+    if (subscription.status !== 'active') {
       return null;
     }
 
@@ -123,7 +125,7 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
       provider: 'stripe',
       provider_customer_id: typeof subscription.customer === 'string' ? subscription.customer : null,
       provider_subscription_id: subscription.id,
-      status: 'active', // On sait qu'il est actif ici
+      status: 'active',
       price_amount: 3.49,
       currency: (subscription.currency ?? 'eur').toUpperCase(),
       current_period_end_at: fromUnix(subscription.current_period_end),
@@ -140,9 +142,32 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
     throw result.error;
   }
 
-  await upsertPaymentMethod(userId, subscription.default_payment_method);
-
   return result.data ?? null;
+}
+
+async function syncBillingRecords(userId: string, customerId: string) {
+  if (!stripe || !admin) return;
+
+  const invoices = await stripe.invoices.list({
+    customer: customerId,
+    limit: 10,
+  });
+
+  const records = invoices.data.map((invoice) => ({
+    user_id: userId,
+    provider_invoice_id: invoice.id,
+    amount: invoice.total / 100,
+    currency: invoice.currency.toUpperCase(),
+    billed_at: fromUnix(invoice.status_transitions.paid_at || invoice.created),
+    status: invoice.status === 'paid' ? 'paid' : (invoice.status === 'open' || invoice.status === 'draft') ? 'upcoming' : 'failed',
+    label: 'Abonnement Budgee',
+  }));
+
+  if (records.length > 0) {
+    await admin.from('billing_records').upsert(records, {
+      onConflict: 'provider_invoice_id',
+    });
+  }
 }
 
 async function findLatestSubscriptionId(userId: string, email: string) {

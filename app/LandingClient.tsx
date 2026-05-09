@@ -844,7 +844,7 @@ export default function LandingClient() {
                 </svg>
               </a>
               <div className="reassurance-line">
-                <span>Carte requise</span>
+                <span>Période d&apos;essai</span>
                 <span>Aucun prélèvement avant J+7</span>
                 <span>Résiliation en 1 clic</span>
               </div>
@@ -1263,7 +1263,7 @@ export default function LandingClient() {
                   <div className="step-title-text">
                     <strong>Ton essai gratuit</strong>
                     <p>
-                      Ajoute ta carte et, si tu en as un, ton code BDE ou parrain.
+                      Valide ton essai et, si tu en as un, ton code BDE ou parrain.
                     </p>
                   </div>
                 </div>
