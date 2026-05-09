@@ -126,7 +126,7 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
       provider_customer_id: typeof subscription.customer === 'string' ? subscription.customer : null,
       provider_subscription_id: subscription.id,
       status: 'active',
-      price_amount: 3.49,
+      price_amount: 1.99,
       currency: (subscription.currency ?? 'eur').toUpperCase(),
       current_period_end_at: fromUnix(subscription.current_period_end),
       cancel_at_period_end: Boolean(subscription.cancel_at_period_end),

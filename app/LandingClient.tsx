@@ -859,7 +859,7 @@ export default function LandingClient() {
                 <p>Tu sais ce que tu peux encore dépenser.</p>
               </div>
               <div className="sales-item">
-                <strong>3,49 € vite rentabilisés</strong>
+                <strong>1,99 € vite rentabilisés</strong>
                 <p>Moins qu&apos;un café par semaine.</p>
               </div>
             </div>
@@ -1094,7 +1094,7 @@ export default function LandingClient() {
               },
               {
                 quote:
-                  '"3,49 € par mois c\'est littéralement rien comparé à ce que je gaspillais."',
+                  '"1,99 € par mois c\'est littéralement rien comparé à ce que je gaspillais."',
                 author: '— Tom, étudiant en L2',
               },
             ].map((testimonial) => (
@@ -1115,7 +1115,7 @@ export default function LandingClient() {
             <div className="price-side">
               <div className="price-main">
                 <div className="price-big">
-                  3,49 <span>€ / mois</span>
+                  1,99 <span>€ / mois</span>
                 </div>
                 <p className="price-tagline">Moins qu&apos;un café par semaine.</p>
               </div>
@@ -1126,7 +1126,7 @@ export default function LandingClient() {
                 <li>Tes données sont sécurisées</li>
               </ul>
               <div className="pricing-disclaimer">
-                Après tes 7 jours gratuits, tu seras prélevé de 3,49 €
+                Après tes 7 jours gratuits, tu seras prélevé de 1,99 €
                 automatiquement. Tu peux résilier à tout moment en 1 clic.
               </div>
             </div>
@@ -1269,7 +1269,7 @@ export default function LandingClient() {
                 </div>
                 <div className="stripe-block">
                   <div className="stripe-header">
-                    <span className="stripe-title">Carte bancaire (Stripe)</span>
+                    <span className="stripe-title">Paiement mensuel (Stripe)</span>
                     <span className="stripe-logos" aria-label="Visa et Mastercard">
                       <span className="card-logo visa-logo" aria-hidden="true">
                         <span className="visa-logo-text">VISA</span>
