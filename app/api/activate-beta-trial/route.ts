@@ -1,8 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import {
+  ApiRouteError,
+  assertAuthenticatedUser,
+  ensureAllowedOrigin,
+  jsonResponse,
+  optionsResponse,
+  requireAuthenticatedUser,
+} from '../_lib/security';
+
+const supabaseUrl = process.env.SUPABASE_URL?.trim();
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
 const admin =
   supabaseUrl && supabaseServiceRoleKey
@@ -11,111 +20,108 @@ const admin =
       })
     : null;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+async function ensureProfile(userId: string) {
+  if (!admin) {
+    throw new ApiRouteError('Supabase n’est pas configuré.', 500);
+  }
 
-export async function OPTIONS() {
-  return NextResponse.json({ ok: true }, { headers: corsHeaders });
+  let profileCheck = await admin.from('profiles').select('id').eq('id', userId).maybeSingle();
+
+  if (!profileCheck.data) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    profileCheck = await admin.from('profiles').select('id').eq('id', userId).maybeSingle();
+  }
+
+  if (!profileCheck.data) {
+    const { data: userData, error } = await admin.auth.admin.getUserById(userId);
+    if (error) {
+      throw error;
+    }
+
+    const { error: insertError } = await admin.from('profiles').insert({
+      id: userId,
+      email: userData.user?.email ?? '',
+    });
+
+    if (insertError) {
+      throw insertError;
+    }
+  }
+}
+
+export function OPTIONS(request: NextRequest) {
+  return optionsResponse(request);
 }
 
 export async function POST(request: NextRequest) {
   if (!admin) {
-    return NextResponse.json(
+    return jsonResponse(
+      request,
       { error: 'Supabase n’est pas configuré.' },
-      { status: 500, headers: corsHeaders }
+      { status: 500 },
     );
   }
 
   try {
+    ensureAllowedOrigin(request);
+    const authenticatedUser = await requireAuthenticatedUser(request);
     const payload = await request.json();
     const userId = String(payload.userId ?? '').trim();
-    
+
     if (!userId) {
-      return NextResponse.json(
+      return jsonResponse(
+        request,
         { error: 'ID utilisateur manquant.' },
-        { status: 400, headers: corsHeaders }
+        { status: 400 },
       );
     }
 
-    // S'assurer que le profil existe (parfois le trigger Supabase met quelques millisecondes)
-    let profileCheck = await admin
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
+    assertAuthenticatedUser(authenticatedUser, userId);
+    await ensureProfile(userId);
 
-    if (!profileCheck.data) {
-      // On attend un tout petit peu
-      await new Promise(resolve => setTimeout(resolve, 500));
-      profileCheck = await admin
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .maybeSingle();
-    }
-
-    if (!profileCheck.data) {
-      // Si toujours rien, on le crée manuellement pour éviter l'erreur de clé étrangère
-      const { data: userData } = await admin.auth.admin.getUserById(userId);
-      await admin.from('profiles').insert({
-        id: userId,
-        email: userData.user?.email ?? '',
-      });
-    }
-
-    // Calcul de la date de fin (7 jours à partir de maintenant)
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 7);
 
-    // Création de l'abonnement "Beta" dans la base
-    // On ne permet l'activation QUE si l'utilisateur n'a pas encore d'abonnement
-    // On ne permet l'activation QUE si l'utilisateur n'a ABSOLUMENT AUCUN abonnement
-    const { data: existingSubs } = await admin
+    const { data: existingSubs, error: existingSubsError } = await admin
       .from('subscriptions')
-      .select('id, status, trial_ends_at')
-      .eq('user_id', userId);
+      .select('id, trial_ends_at, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (existingSubsError) {
+      throw existingSubsError;
+    }
 
     if (existingSubs && existingSubs.length > 0) {
-      // On récupère le plus récent pour renvoyer la date actuelle
-      const latestSub = existingSubs.sort((a, b) => b.id - a.id)[0]; 
-      return NextResponse.json({ 
-        ok: true, 
+      return jsonResponse(request, {
+        ok: true,
         message: 'Un essai existe déjà pour ce compte.',
-        trialEndsAt: latestSub.trial_ends_at 
-      }, { headers: corsHeaders });
-    }
-
-    const dbResult = await admin
-      .from('subscriptions')
-      .insert({
-        user_id: userId,
-        status: 'trialing',
-        trial_ends_at: trialEndsAt.toISOString(),
-        provider: 'beta',
-        price_amount: 3.49,
-        currency: 'EUR'
+        trialEndsAt: existingSubs[0].trial_ends_at,
       });
-
-    if (dbResult.error) {
-      console.error('Database Error:', dbResult.error);
-      return NextResponse.json(
-        { error: `Erreur base de données : ${dbResult.error.message}` },
-        { status: 500, headers: corsHeaders }
-      );
     }
 
-    return NextResponse.json({ ok: true, trialEndsAt }, { headers: corsHeaders });
+    const { error: insertError } = await admin.from('subscriptions').insert({
+      user_id: userId,
+      status: 'trialing',
+      trial_ends_at: trialEndsAt.toISOString(),
+      provider: 'beta',
+      price_amount: 1.99,
+      currency: 'EUR',
+    });
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    return jsonResponse(request, { ok: true, trialEndsAt });
   } catch (error) {
-    console.error('Beta Trial Activation Error:', error);
-    return NextResponse.json(
-      { 
+    const status = error instanceof ApiRouteError ? error.status : 500;
+    return jsonResponse(
+      request,
+      {
         error: error instanceof Error ? error.message : 'Activation impossible.',
-        details: error
       },
-      { status: 500, headers: corsHeaders }
+      { status },
     );
   }
 }

@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  ApiRouteError,
+  ensureAllowedOrigin,
+  jsonResponse,
+  requireAuthenticatedUser,
+} from '../../_lib/security';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -200,18 +206,22 @@ async function syncSubscriptionRecord({
 
 export async function POST(request: NextRequest) {
   if (!stripe || !admin) {
-    return NextResponse.json(
+    return jsonResponse(
+      request,
       { error: 'Confirmation Stripe non configurée.' },
       { status: 500 },
     );
   }
 
   try {
+    ensureAllowedOrigin(request);
+    const authenticatedUser = await requireAuthenticatedUser(request);
     const payload = await request.json();
     const sessionId = String(payload.sessionId ?? '').trim();
 
     if (!sessionId) {
-      return NextResponse.json(
+      return jsonResponse(
+        request,
         { error: 'Session Stripe manquante.' },
         { status: 400 },
       );
@@ -220,7 +230,8 @@ export async function POST(request: NextRequest) {
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
 
     if (checkoutSession.mode !== 'subscription') {
-      return NextResponse.json(
+      return jsonResponse(
+        request,
         { error: 'Cette session Stripe n’est pas un abonnement.' },
         { status: 400 },
       );
@@ -235,10 +246,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userId || typeof checkoutSession.subscription !== 'string') {
-      return NextResponse.json(
+      return jsonResponse(
+        request,
         { error: 'Impossible de relier cette session Stripe à un compte Budgee.' },
         { status: 400 },
       );
+    }
+
+    if (authenticatedUser.id !== userId) {
+      throw new ApiRouteError('Compte Budgee invalide.', 403);
     }
 
     const subscription = await syncSubscriptionRecord({
@@ -247,19 +263,21 @@ export async function POST(request: NextRequest) {
       customerId: typeof checkoutSession.customer === 'string' ? checkoutSession.customer : null,
     });
 
-    return NextResponse.json({
+    return jsonResponse(request, {
       ok: true,
       subscription,
     });
   } catch (error) {
-    return NextResponse.json(
+    const status = error instanceof ApiRouteError ? error.status : 500;
+    return jsonResponse(
+      request,
       {
         error:
           error instanceof Error
             ? error.message
             : 'Confirmation Stripe indisponible.',
       },
-      { status: 500 },
+      { status },
     );
   }
 }

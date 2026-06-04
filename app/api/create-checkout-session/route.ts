@@ -2,6 +2,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  ApiRouteError,
+  assertAuthenticatedUser,
+  ensureAllowedOrigin,
+  jsonResponse,
+  optionsResponse,
+  requireAuthenticatedUser,
+} from '../_lib/security';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripePriceId = process.env.STRIPE_PRICE_ID;
@@ -16,12 +24,6 @@ const admin =
         auth: { autoRefreshToken: false, persistSession: false },
       })
     : null;
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
 
 // DECISION: le SDK Stripe côté serveur doit tourner sur le runtime Node.js.
 export const runtime = 'nodejs';
@@ -39,7 +41,7 @@ function getSiteUrl(request: NextRequest) {
     return explicitUrl.replace(/\/$/, '');
   }
 
-  return 'https://budgeeapp.vercel.app';
+  throw new ApiRouteError('SITE_URL est manquante sur ce déploiement.', 500);
 }
 
 async function getOrCreateStripeCustomer({
@@ -85,48 +87,57 @@ async function getOrCreateStripeCustomer({
   return customer.id;
 }
 
-export function OPTIONS() {
-  return NextResponse.json({ ok: true }, { headers: corsHeaders });
+export function OPTIONS(request: NextRequest) {
+  return optionsResponse(request);
 }
 
 export async function POST(request: NextRequest) {
   if (!stripe || !stripePriceId) {
-    return NextResponse.json(
+    return jsonResponse(
+      request,
       {
         error: 'Stripe checkout n’est pas encore configuré sur ce site.',
       },
-      { status: 500, headers: corsHeaders },
+      { status: 500 },
     );
   }
 
   try {
+    ensureAllowedOrigin(request);
+    const authenticatedUser = await requireAuthenticatedUser(request);
     const payload = await request.json();
     const userId = String(payload.userId ?? '').trim();
-    const email = String(payload.email ?? '').trim().toLowerCase();
     const fullName = String(payload.fullName ?? '').trim();
     const profileType = String(payload.profileType ?? '').trim();
     const rawPromoCode = String(payload.promoCode ?? '').trim();
     const normalizedPromoCode = rawPromoCode.toUpperCase();
 
-    if (!userId || !email) {
-      return NextResponse.json(
+    if (!userId) {
+      return jsonResponse(
+        request,
         {
           error: 'Le compte Budgee doit être créé avant de lancer le paiement.',
         },
-        { status: 400, headers: corsHeaders },
+        { status: 400 },
       );
+    }
+
+    assertAuthenticatedUser(authenticatedUser, userId);
+    const email = authenticatedUser.email?.trim().toLowerCase();
+    if (!email) {
+      throw new ApiRouteError('Email Budgee introuvable pour ce compte.', 400);
     }
 
     let trialDays =
       normalizedPromoCode && bdePromoCode && normalizedPromoCode === bdePromoCode ? 14 : 7;
 
-    // Si l'utilisateur a déjà eu un essai en base, on ne lui en redonne pas un sur Stripe
+    // DECISION: un compte qui a déjà eu un abonnement ou un essai ne doit pas récupérer un nouveau trial Stripe.
     if (admin) {
       const { data: existingSubs } = await admin
         .from('subscriptions')
         .select('id')
         .eq('user_id', userId);
-      
+
       if (existingSubs && existingSubs.length > 0) {
         trialDays = 0;
       }
@@ -177,19 +188,21 @@ export async function POST(request: NextRequest) {
       cancel_url: `${siteUrl}/?checkout=cancel`,
     });
 
-    return NextResponse.json(
+    return jsonResponse(
+      request,
       {
         url: session.url,
         trialDays,
       },
-      { headers: corsHeaders },
     );
   } catch (error) {
-    return NextResponse.json(
+    const status = error instanceof ApiRouteError ? error.status : 500;
+    return jsonResponse(
+      request,
       {
         error: error instanceof Error ? error.message : 'Checkout indisponible.',
       },
-      { status: 500, headers: corsHeaders },
+      { status },
     );
   }
 }

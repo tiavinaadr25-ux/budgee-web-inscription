@@ -1,6 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  ApiRouteError,
+  assertAuthenticatedUser,
+  ensureAllowedOrigin,
+  jsonResponse,
+  requireAuthenticatedUser,
+} from '../../_lib/security';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -213,37 +220,45 @@ async function findLatestSubscriptionId(userId: string, email: string) {
 
 export async function POST(request: NextRequest) {
   if (!stripe || !admin) {
-    return NextResponse.json({ error: 'Sync Stripe non configuré.' }, { status: 500 });
+    return jsonResponse(request, { error: 'Sync Stripe non configuré.' }, { status: 500 });
   }
 
   try {
+    ensureAllowedOrigin(request);
+    const authenticatedUser = await requireAuthenticatedUser(request);
     const payload = await request.json();
     const rawUserId = String(payload.userId ?? '').trim();
-    const rawEmail = String(payload.email ?? '').trim().toLowerCase();
 
     if (!rawUserId) {
-      return NextResponse.json(
+      return jsonResponse(
+        request,
         { error: 'Compte Budgee manquant.' },
         { status: 400 },
       );
     }
 
-    const user = await verifyProfileUser(rawUserId, rawEmail);
+    assertAuthenticatedUser(authenticatedUser, rawUserId);
+    const user = await verifyProfileUser(
+      authenticatedUser.id,
+      authenticatedUser.email?.trim().toLowerCase() ?? '',
+    );
     const subscriptionId = await findLatestSubscriptionId(user.userId, user.email);
 
     if (!subscriptionId) {
-      return NextResponse.json({ ok: true, subscription: null });
+      return jsonResponse(request, { ok: true, subscription: null });
     }
 
     const subscription = await syncSubscriptionRecord(user.userId, subscriptionId);
-    return NextResponse.json({ ok: true, subscription });
+    return jsonResponse(request, { ok: true, subscription });
   } catch (error) {
-    return NextResponse.json(
+    const status = error instanceof ApiRouteError ? error.status : 500;
+    return jsonResponse(
+      request,
       {
         error:
           error instanceof Error ? error.message : 'Synchronisation Stripe indisponible.',
       },
-      { status: 500 },
+      { status },
     );
   }
 }

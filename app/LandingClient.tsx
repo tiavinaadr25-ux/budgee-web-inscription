@@ -3,26 +3,27 @@
 // MIGRATED FROM: index.html
 import { createClient } from '@supabase/supabase-js';
 import { Eye, EyeOff } from 'lucide-react';
-import type { FormEvent } from 'react';
+import type { FormEvent, MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabasePublishableKey);
-const pendingSignupStorageKey = 'budgee-pending-signup';
-const budgeeAppUrl = 'budgee://';
-const iosStoreUrl = process.env.NEXT_PUBLIC_IOS_STORE_URL || '';
-const androidStoreUrl = process.env.NEXT_PUBLIC_ANDROID_STORE_URL || '';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const supabasePublishableKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ??
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
-function getAppStoreUrl(): string {
-  if (typeof navigator === 'undefined') return iosStoreUrl;
-  const ua = navigator.userAgent.toLowerCase();
-  if (/android/i.test(ua)) return androidStoreUrl;
-  return iosStoreUrl;
-}
+const supabase =
+  supabaseUrl && supabasePublishableKey
+    ? createClient(supabaseUrl, supabasePublishableKey)
+    : null;
+const pendingSignupStorageKey = 'budgee-pending-signup';
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
+type InstallContext = 'ios' | 'android' | 'desktop';
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+};
 
 type PendingSignup = {
   email: string;
@@ -72,8 +73,18 @@ function hasSubscriptionAccess(
   return result;
 }
 
+function getSupabaseClient() {
+  if (!supabase) {
+    throw new Error(
+      'Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY pour activer Budgee web.',
+    );
+  }
+
+  return supabase;
+}
+
 async function fetchCurrentSubscription(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('subscriptions')
     .select('id, status, trial_ends_at, current_period_end_at, cancel_at_period_end')
     .eq('user_id', userId)
@@ -91,23 +102,24 @@ async function fetchCurrentSubscription(userId: string) {
 }
 
 async function launchCheckout({
+  accessToken,
   userId,
   email,
   fullName,
   profileType,
   promoCode,
 }: {
+  accessToken?: string;
   userId: string;
   email: string;
   fullName: string;
   profileType: string;
   promoCode: string;
 }) {
+  const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/create-checkout-session', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       userId,
       email,
@@ -128,12 +140,11 @@ async function launchCheckout({
   window.location.href = payload.url;
 }
 
-async function confirmCheckoutSession(sessionId: string) {
+async function confirmCheckoutSession(sessionId: string, accessToken?: string) {
+  const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/stripe/confirm-checkout', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       sessionId,
     }),
@@ -151,17 +162,18 @@ async function confirmCheckoutSession(sessionId: string) {
 }
 
 async function syncStripeAccess({
+  accessToken,
   userId,
   email,
 }: {
+  accessToken?: string;
   userId: string;
   email: string;
 }) {
+  const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/stripe/sync-access', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       userId,
       email,
@@ -177,6 +189,21 @@ async function syncStripeAccess({
   }
 
   return payload.subscription ?? null;
+}
+
+async function getAuthorizedJsonHeaders(explicitAccessToken?: string) {
+  const accessToken =
+    explicitAccessToken ??
+    (await getSupabaseClient().auth.getSession()).data.session?.access_token?.trim();
+
+  if (!accessToken) {
+    throw new Error('Reconnecte-toi à Budgee pour continuer en sécurité.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${accessToken}`,
+  };
 }
 
 function getAuthParams() {
@@ -233,12 +260,17 @@ function getPendingSignupForEmail(email: string) {
   return pendingSignup.email === email.toLowerCase() ? pendingSignup : null;
 }
 
-async function activateBetaTrial({ userId }: { userId: string }) {
+async function activateBetaTrial({
+  accessToken,
+  userId,
+}: {
+  accessToken?: string;
+  userId: string;
+}) {
+  const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/activate-beta-trial', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ userId }),
   });
 
@@ -252,9 +284,10 @@ async function activateBetaTrial({ userId }: { userId: string }) {
 }
 
 export default function LandingClient() {
+  const isSupabaseConfigured = Boolean(supabase);
   const [authMode, setAuthModeState] = useState<AuthMode>('signup');
   const [statusMessage, setStatusMessage] = useState(
-    '7 jours gratuits sans carte. Accès immédiat à l’app.',
+    '7 jours gratuits sans carte. Accès immédiat à Budgee.',
   );
   const [statusVariant, setStatusVariant] = useState<StatusVariant>('info');
   const [toastMessage, setToastMessage] = useState(
@@ -263,6 +296,10 @@ export default function LandingClient() {
   const [toastVisible, setToastVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAppActions, setShowAppActions] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [isStandaloneMode, setIsStandaloneMode] = useState(false);
+  const [installContext, setInstallContext] = useState<InstallContext>('desktop');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -270,7 +307,6 @@ export default function LandingClient() {
   const [promoCode, setPromoCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const appRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSignup = authMode === 'signup';
   const isRecovery = authMode === 'recovery';
@@ -293,19 +329,45 @@ export default function LandingClient() {
     setStatusVariant(variant);
   }
 
-  function openBudgeeAppWithFallback() {
-    setShowAppActions(true);
+  function scrollToInstallSection() {
+    document.getElementById('installer-pwa')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
 
-    if (appRedirectTimer.current) {
-      clearTimeout(appRedirectTimer.current);
+  async function handleInstallPwa(
+    event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+  ) {
+    event?.preventDefault();
+
+    if (isStandaloneMode) {
+      scrollToInstallSection();
+      showToast('Budgee est déjà installé sur cet appareil.');
+      return;
     }
 
-    window.location.href = budgeeAppUrl;
-    appRedirectTimer.current = setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        window.location.href = getAppStoreUrl();
+    if (deferredInstallPrompt) {
+      try {
+        await deferredInstallPrompt.prompt();
+        const installChoice = await deferredInstallPrompt.userChoice;
+        if (installChoice.outcome === 'accepted') {
+          showToast('Installation de Budgee lancée');
+        }
+      } catch (installError) {
+        console.warn('Impossible de lancer le prompt PWA Budgee.', installError);
+      } finally {
+        setDeferredInstallPrompt(null);
       }
-    }, 1400);
+      return;
+    }
+
+    scrollToInstallSection();
+    showToast(
+      installContext === 'ios'
+        ? 'Sur iPhone : partage Safari puis Sur l’écran d’accueil.'
+        : 'Retrouve juste en dessous les étapes pour installer Budgee.',
+    );
   }
 
   function setAuthMode(mode: AuthMode) {
@@ -314,7 +376,7 @@ export default function LandingClient() {
 
     setStatus(
       mode === 'signup'
-        ? '7 jours gratuits sans carte. Accès immédiat à l’app.'
+        ? '7 jours gratuits sans carte. Accès immédiat à Budgee.'
         : mode === 'recovery'
           ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
           : 'Connecte-toi pour reprendre ton budget.',
@@ -322,7 +384,7 @@ export default function LandingClient() {
     );
   }
 
-  async function handleForgotPassword(event: React.MouseEvent<HTMLAnchorElement>) {
+  async function handleForgotPassword(event: MouseEvent<HTMLAnchorElement>) {
     event.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -332,9 +394,12 @@ export default function LandingClient() {
     }
 
     const redirectTo = getRedirectUrl();
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo,
-    });
+    const { error } = await getSupabaseClient().auth.resetPasswordForEmail(
+      normalizedEmail,
+      {
+        redirectTo,
+      },
+    );
 
     if (error) {
       setStatus("Impossible d’envoyer le lien de réinitialisation pour l’instant.", 'error');
@@ -389,7 +454,7 @@ export default function LandingClient() {
     let error: Error | null = null;
 
     if (authMode === 'signup') {
-      const response = await supabase.auth.signUp({
+      const response = await getSupabaseClient().auth.signUp({
         email: normalizedEmail,
         password,
         options: {
@@ -403,11 +468,11 @@ export default function LandingClient() {
       data = response.data;
       error = response.error;
     } else if (authMode === 'recovery') {
-      const response = await supabase.auth.updateUser({ password });
+      const response = await getSupabaseClient().auth.updateUser({ password });
       data = response.data;
       error = response.error;
     } else {
-      const response = await supabase.auth.signInWithPassword({
+      const response = await getSupabaseClient().auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
@@ -466,18 +531,21 @@ export default function LandingClient() {
       try {
         setStatus('Compte créé. Activation de ton accès gratuit...', 'info');
         await activateBetaTrial({
+          accessToken: data.session?.access_token,
           userId: data.user?.id ?? '',
         });
-        
+
         setAuthModeState('login');
         setShowAppActions(true);
         setStatus(
-          'Ton essai gratuit de 7 jours est activé ! Tu peux maintenant ouvrir l’app Budgee pour commencer.',
+          'Ton essai gratuit de 7 jours est activé. Installe Budgee sur ton écran d’accueil pour commencer.',
           'success',
         );
         showToast('Essai Budgee activé');
-        openBudgeeAppWithFallback();
         clearPendingSignup();
+        window.setTimeout(() => {
+          scrollToInstallSection();
+        }, 250);
       } catch (betaError) {
         setStatus(
           betaError instanceof Error
@@ -513,6 +581,7 @@ export default function LandingClient() {
 
       if (!hasSubscriptionAccess(currentSubscription) && sessionUserId) {
         currentSubscription = await syncStripeAccess({
+          accessToken: data?.session?.access_token,
           userId: sessionUserId,
           email: data?.session?.user?.email ?? normalizedEmail,
         });
@@ -521,7 +590,7 @@ export default function LandingClient() {
       if (hasSubscriptionAccess(currentSubscription)) {
         setShowAppActions(true);
         setStatus(
-          'Connexion réussie. Ton accès Budgee est actif, tu peux ouvrir l’app.',
+          'Connexion réussie. Ton accès Budgee est actif, tu peux installer Budgee sur ton écran d’accueil.',
           'success',
         );
         showToast('Accès Budgee actif');
@@ -538,7 +607,7 @@ export default function LandingClient() {
         if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
           setShowAppActions(true);
           setStatus(
-            'Félicitations ! Ton essai gratuit de 7 jours est activé. Tu peux ouvrir l’app.',
+            'Félicitations ! Ton essai gratuit de 7 jours est activé. Tu peux installer Budgee sur ton écran d’accueil.',
             'success',
           );
           showToast('Essai gratuit activé !');
@@ -557,6 +626,7 @@ export default function LandingClient() {
         'info',
       );
       await launchCheckout({
+        accessToken: data.session?.access_token,
         userId: sessionUserId,
         email: data?.session?.user?.email ?? normalizedEmail,
         fullName: userMetadata?.name ?? '',
@@ -575,27 +645,65 @@ export default function LandingClient() {
   }
 
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      return () => {
+        if (toastTimer.current) {
+          clearTimeout(toastTimer.current);
+        }
+      };
+    }
+
     async function init() {
       const authParams = getAuthParams();
       const searchParams = new URLSearchParams(window.location.search);
       const checkoutSessionId = searchParams.get('session_id');
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData } = await getSupabaseClient().auth.getSession();
 
       if (searchParams.get('checkout') === 'success') {
-        if (checkoutSessionId) {
-          await confirmCheckoutSession(checkoutSessionId);
+        let checkoutConfirmed = false;
+        let checkoutConfirmationError: Error | null = null;
+
+        if (checkoutSessionId && sessionData.session?.access_token) {
+          try {
+            await confirmCheckoutSession(
+              checkoutSessionId,
+              sessionData.session.access_token,
+            );
+            checkoutConfirmed = true;
+          } catch (error) {
+            checkoutConfirmationError =
+              error instanceof Error
+                ? error
+                : new Error(
+                    'Le paiement est revenu, mais Budgee n’a pas encore confirmé ton essai.',
+                  );
+          }
         }
+
         clearPendingSignup();
         setAuthModeState('login');
         setShowAppActions(true);
-        setStatus(
-          'Paiement enregistré. On ouvre maintenant l’app Budgee. Si elle n’est pas installée, on te propose juste après de la télécharger.',
-          'success',
-        );
-        showToast('Essai Budgee activé');
+
+        if (checkoutConfirmed || !checkoutSessionId) {
+          setStatus(
+            'Paiement enregistré. Installe Budgee sur ton écran d’accueil pour le retrouver comme une app.',
+            'success',
+          );
+          showToast('Essai Budgee activé');
+        } else if (checkoutConfirmationError) {
+          setStatus(checkoutConfirmationError.message, 'info');
+          showToast('Paiement à confirmer');
+        } else {
+          setStatus(
+            'Paiement revenu. Connecte-toi juste après pour finaliser l’activation de ton accès Budgee.',
+            'info',
+          );
+          showToast('Paiement à confirmer');
+        }
+
         window.history.replaceState({}, document.title, window.location.pathname);
         window.setTimeout(() => {
-          openBudgeeAppWithFallback();
+          scrollToInstallSection();
         }, 250);
       } else if (searchParams.get('checkout') === 'cancel') {
         setAuthModeState('login');
@@ -626,6 +734,7 @@ export default function LandingClient() {
             sessionData.session.user.id
           ) {
             currentSubscription = await syncStripeAccess({
+              accessToken: sessionData.session.access_token,
               userId: sessionData.session.user.id,
               email: sessionData.session.user.email ?? '',
             });
@@ -646,32 +755,38 @@ export default function LandingClient() {
             clearPendingSignup();
             setShowAppActions(true);
             setStatus(
-              'Tu es connectée. Ton accès Budgee est actif, tu peux ouvrir l’app.',
+              'Tu es connectée. Ton accès Budgee est actif, tu peux installer Budgee sur ton écran d’accueil.',
               'success',
             );
 
-            // Si on vient de confirmer l'email, on redirige automatiquement vers l'app
             if (isConfirmingEmail) {
               showToast('Bienvenue sur Budgee !');
-              openBudgeeAppWithFallback();
+              window.setTimeout(() => {
+                scrollToInstallSection();
+              }, 250);
             }
           } else {
-            // L'utilisateur est connecté mais n'a pas d'accès valide
             if (isConfirmingEmail && !currentSubscription) {
-              setStatus('Email confirmé. Activation de ton essai gratuit de 7 jours...', 'info');
+              setStatus(
+                'Email confirmé. Activation de ton essai gratuit de 7 jours...',
+                'info',
+              );
               const trialResult = await activateBetaTrial({
+                accessToken: sessionData.session.access_token,
                 userId: sessionData.session.user.id,
               });
 
               if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
                 setShowAppActions(true);
                 setStatus(
-                'Félicitations ! Ton abonnement Budgee est actif. Bienvenue dans l’aventure !',
-                'success',
-              );
-              showToast('Abonnement activé !');
+                  'Félicitations ! Ton essai gratuit est actif. Installe Budgee sur ton écran d’accueil pour commencer.',
+                  'success',
+                );
+                showToast('Essai gratuit activé !');
                 clearPendingSignup();
-                openBudgeeAppWithFallback();
+                window.setTimeout(() => {
+                  scrollToInstallSection();
+                }, 250);
               } else {
                 // Si l'activation a échoué (déjà eu un essai), on redirige vers le paiement
                 setStatus(
@@ -679,6 +794,7 @@ export default function LandingClient() {
                   'info',
                 );
                 setShowAppActions(false);
+                showToast('Essai déjà utilisé');
               }
             } else {
               setShowAppActions(false);
@@ -721,9 +837,50 @@ export default function LandingClient() {
       if (toastTimer.current) {
         clearTimeout(toastTimer.current);
       }
-      if (appRedirectTimer.current) {
-        clearTimeout(appRedirectTimer.current);
-      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    const isAndroidDevice = /android/.test(userAgent);
+    const standalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+
+    setInstallContext(isIosDevice ? 'ios' : isAndroidDevice ? 'android' : 'desktop');
+    setIsStandaloneMode(standalone);
+
+    // DECISION: on enregistre un service worker minimal pour rendre Budgee installable en PWA sans ajouter une dépendance supplémentaire.
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch((serviceWorkerError) => {
+        console.warn('Service worker Budgee non enregistré.', serviceWorkerError);
+      });
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredInstallPrompt(null);
+      setIsStandaloneMode(true);
+      showToast('Budgee est installé sur ton écran d’accueil');
+    };
+
+    window.addEventListener(
+      'beforeinstallprompt',
+      handleBeforeInstallPrompt as EventListener,
+    );
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt as EventListener,
+      );
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -773,6 +930,26 @@ export default function LandingClient() {
         : 'Je me connecte';
   const showForgotPassword = false;
 
+  if (!isSupabaseConfigured) {
+    return (
+      <>
+        <div className="bg-glow" />
+        <div className="page">
+          <section className="card">
+            <div className="section-kicker">Configuration</div>
+            <h1 className="section-h">Budgee web n’est pas encore configuré</h1>
+            <p className="section-sub">
+              Ajoute <code>NEXT_PUBLIC_SUPABASE_URL</code> et{' '}
+              <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> dans les variables
+              d’environnement du déploiement pour activer l’inscription et la
+              connexion.
+            </p>
+          </section>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="bg-glow" />
@@ -784,12 +961,11 @@ export default function LandingClient() {
           </a>
           <div className="nav-actions">
             <a
-              href={process.env.NEXT_PUBLIC_IOS_STORE_URL || '#'}
+              href="#installer-pwa"
               className="nav-app-link"
-              target="_blank"
-              rel="noreferrer"
+              onClick={handleInstallPwa}
             >
-              📱 App iOS
+              📲 Installer la PWA
             </a>
             <a href="#inscription" className="nav-cta">
               Commencer mon essai gratuit
@@ -1077,33 +1253,71 @@ export default function LandingClient() {
         </section>
 
         <section className="card fade-up">
-          <div className="section-kicker">Témoignages</div>
-          <h3 className="section-h">Ils voient enfin clair dans leur mois</h3>
-          <div className="testimonials-count">+2 300 étudiants ont rejoint Budgee</div>
-          <div className="testimonials-grid">
-            {[
-              {
-                quote:
-                  '"Je savais plus du tout où passait mon argent. Là je vois tout d\'un coup d\'œil."',
-                author: '— Lucas, étudiant en M1',
-              },
-              {
-                quote:
-                  '"En 3 jours j\'avais déjà compris pourquoi j\'étais toujours à découvert."',
-                author: '— Inès, alternante en BTS',
-              },
-              {
-                quote:
-                  '"1,99 € par mois c\'est littéralement rien comparé à ce que je gaspillais."',
-                author: '— Tom, étudiant en L2',
-              },
-            ].map((testimonial) => (
-              <div className="testimonial-card" key={testimonial.author}>
-                <div className="stars">★★★★★</div>
-                <blockquote>{testimonial.quote}</blockquote>
-                <div className="testimonial-meta">{testimonial.author}</div>
-              </div>
-            ))}
+          <div className="section-kicker">PWA</div>
+          <h3 className="section-h" id="installer-pwa">
+            Installe Budgee sur ton écran d&apos;accueil
+          </h3>
+          <p className="section-sub">
+            Budgee web s&apos;installe comme une app, sans App Store ni Play Store.
+            Tu gardes un accès rapide au site et à ton compte depuis ton téléphone
+            ou ton ordinateur.
+          </p>
+          <div className="install-banner">
+            <strong>
+              {isStandaloneMode
+                ? 'Budgee est déjà installé sur cet appareil.'
+                : deferredInstallPrompt
+                  ? 'Ton navigateur peut installer Budgee en un clic.'
+                  : installContext === 'ios'
+                    ? 'Sur iPhone, l’installation se fait depuis le menu Partager de Safari.'
+                    : installContext === 'android'
+                      ? 'Sur Android, l’installation se fait depuis le menu de Chrome.'
+                      : 'Sur ordinateur, Chrome ou Edge peuvent installer Budgee.'}
+            </strong>
+            <p>
+              {isStandaloneMode
+                ? 'Tu peux garder Budgee sur ton écran d’accueil et revenir quand tu veux.'
+                : 'Installe-le pour retrouver Budgee plus vite et préparer plus tard la vraie version web installable.'}
+            </p>
+          </div>
+          <div className="install-grid">
+            <article className="install-card">
+              <span className="install-device-badge">iPhone / iPad</span>
+              <ol className="install-steps">
+                <li>Ouvre Budgee dans Safari.</li>
+                <li>Appuie sur Partager.</li>
+                <li>Choisis Sur l’écran d’accueil puis Ajouter.</li>
+              </ol>
+            </article>
+            <article className="install-card">
+              <span className="install-device-badge">Android</span>
+              <ol className="install-steps">
+                <li>Ouvre Budgee dans Chrome.</li>
+                <li>Appuie sur le menu ⋮.</li>
+                <li>Choisis Installer l’application.</li>
+              </ol>
+            </article>
+            <article className="install-card">
+              <span className="install-device-badge">Ordinateur</span>
+              <ol className="install-steps">
+                <li>Ouvre Budgee dans Chrome ou Edge.</li>
+                <li>Utilise l’icône Installer dans la barre d’adresse.</li>
+                <li>Valide pour épingler Budgee comme une app.</li>
+              </ol>
+            </article>
+          </div>
+          <div className="install-actions">
+            <button type="button" className="btn-primary" onClick={handleInstallPwa}>
+              {isStandaloneMode
+                ? 'Budgee est déjà installé'
+                : deferredInstallPrompt
+                  ? 'Installer Budgee maintenant'
+                  : 'Voir les étapes d’installation'}
+            </button>
+            <p className="install-note">
+              Budgee n’utilise pas de store pour cette version : l’installation se
+              fait directement depuis ton navigateur.
+            </p>
           </div>
         </section>
 
@@ -1372,54 +1586,21 @@ export default function LandingClient() {
           </div>
 
           {showAppActions && (
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '10px',
-                marginTop: '12px',
-              }}
-            >
+            <div className="action-row">
+              <button type="button" className="action-btn" onClick={handleInstallPwa}>
+                {deferredInstallPrompt
+                  ? 'Installer Budgee'
+                  : 'Voir comment installer Budgee'}
+              </button>
               <a
-                href={budgeeAppUrl}
+                href="#installer-pwa"
+                className="action-btn action-btn-secondary"
                 onClick={(event) => {
                   event.preventDefault();
-                  openBudgeeAppWithFallback();
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '12px 18px',
-                  borderRadius: '999px',
-                  background: 'var(--blue)',
-                  color: '#fff',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  fontWeight: 800,
+                  scrollToInstallSection();
                 }}
               >
-                Ouvrir l&apos;app Budgee
-              </a>
-              <a
-                href={getAppStoreUrl()}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '12px 18px',
-                  borderRadius: '999px',
-                  border: '1px solid var(--line)',
-                  background: 'rgba(255,255,255,0.8)',
-                  color: 'var(--text)',
-                  textDecoration: 'none',
-                  fontSize: '0.9rem',
-                  fontWeight: 700,
-                }}
-              >
-                Télécharger l&apos;app iOS
+                Guide PWA
               </a>
             </div>
           )}
@@ -1428,7 +1609,10 @@ export default function LandingClient() {
         <footer className="card footer">
           <div className="footer-left">
             <h3>Budgee est prêt pour ton essai gratuit.</h3>
-            <p>Commence sur le site, puis retrouve ton budget dans l&apos;app.</p>
+            <p>
+              Commence sur le site, puis ajoute Budgee à ton écran d&apos;accueil
+              comme une web app.
+            </p>
           </div>
           <div className="footer-links">
             <a href="/cgu">CGU</a>
