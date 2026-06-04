@@ -2,7 +2,6 @@
 
 // MIGRATED FROM: index.html
 import { createClient } from '@supabase/supabase-js';
-import { Eye, EyeOff } from 'lucide-react';
 import type { FormEvent, MouseEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -1443,11 +1442,7 @@ export default function LandingClient() {
                     }}
                     aria-label={showPassword ? 'Masquer' : 'Afficher'}
                   >
-                    {showPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
+                    {showPassword ? '🙈' : '👁️'}
                   </button>
                 </div>
                 <div id="profile-wrap" className={!isSignup ? 'hidden-field' : ''}>
