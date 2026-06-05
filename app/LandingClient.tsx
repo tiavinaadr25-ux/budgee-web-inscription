@@ -28,7 +28,6 @@ type PendingSignup = {
   email: string;
   fullName: string;
   profileType: string;
-  promoCode: string;
 };
 
 function hasSubscriptionAccess(
@@ -106,14 +105,12 @@ async function launchCheckout({
   email,
   fullName,
   profileType,
-  promoCode,
 }: {
   accessToken?: string;
   userId: string;
   email: string;
   fullName: string;
   profileType: string;
-  promoCode: string;
 }) {
   const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/create-checkout-session', {
@@ -124,7 +121,6 @@ async function launchCheckout({
       email,
       fullName,
       profileType,
-      promoCode,
     }),
   });
 
@@ -303,7 +299,6 @@ export default function LandingClient() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [profileType, setProfileType] = useState('Étudiant');
-  const [promoCode, setPromoCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -415,7 +410,6 @@ export default function LandingClient() {
 
     const normalizedName = name.trim();
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedPromoCode = promoCode.trim();
 
     if (
       (!normalizedEmail && authMode !== 'recovery') ||
@@ -513,7 +507,6 @@ export default function LandingClient() {
         email: normalizedEmail,
         fullName: normalizedName,
         profileType,
-        promoCode: normalizedPromoCode,
       });
 
       if (!data?.session) {
@@ -562,7 +555,6 @@ export default function LandingClient() {
       setEmail('');
       setPassword('');
       setProfileType('Étudiant');
-      setPromoCode('');
       setAuthModeState('login');
       setShowAppActions(false);
       setStatus(
@@ -630,7 +622,6 @@ export default function LandingClient() {
         email: data?.session?.user?.email ?? normalizedEmail,
         fullName: userMetadata?.name ?? '',
         profileType: userMetadata?.profile_type ?? '',
-        promoCode: normalizedPromoCode,
       });
     } catch (error) {
       setStatus(
@@ -1472,7 +1463,7 @@ export default function LandingClient() {
                   <div className="step-title-text">
                     <strong>Ton essai gratuit</strong>
                     <p>
-                      Valide ton essai et, si tu en as un, ton code BDE ou parrain.
+                      Aucun code à entrer. Ton essai gratuit démarre directement après activation.
                     </p>
                   </div>
                 </div>
@@ -1490,26 +1481,9 @@ export default function LandingClient() {
                     </span>
                   </div>
                   <p>
-                    Ta carte est renseignée sur la page sécurisée Stripe après
-                    validation.
+                    Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée Stripe.
                   </p>
                 </div>
-                <label className="field-label" htmlFor="f-promo">
-                  Code BDE ou parrain
-                </label>
-                <input
-                  className="field"
-                  id="f-promo"
-                  type="text"
-                  placeholder="Ex : BUDGEE14"
-                  autoComplete="off"
-                  value={promoCode}
-                  onChange={(event) => setPromoCode(event.target.value)}
-                />
-                <p className="promo-note">
-                  Un code valide t&apos;offre 7 jours supplémentaires gratuits, soit
-                  14 jours au total.
-                </p>
               </div>
             )}
 

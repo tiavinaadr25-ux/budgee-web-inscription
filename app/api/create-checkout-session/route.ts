@@ -15,7 +15,6 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripePriceId = process.env.STRIPE_PRICE_ID;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const bdePromoCode = process.env.BUDGEE_BDE_CODE?.trim().toUpperCase() ?? null;
 
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 const admin =
@@ -109,8 +108,6 @@ export async function POST(request: NextRequest) {
     const userId = String(payload.userId ?? '').trim();
     const fullName = String(payload.fullName ?? '').trim();
     const profileType = String(payload.profileType ?? '').trim();
-    const rawPromoCode = String(payload.promoCode ?? '').trim();
-    const normalizedPromoCode = rawPromoCode.toUpperCase();
 
     if (!userId) {
       return jsonResponse(
@@ -128,8 +125,7 @@ export async function POST(request: NextRequest) {
       throw new ApiRouteError('Email Budgee introuvable pour ce compte.', 400);
     }
 
-    let trialDays =
-      normalizedPromoCode && bdePromoCode && normalizedPromoCode === bdePromoCode ? 14 : 7;
+    let trialDays = 7;
 
     // DECISION: un compte qui a déjà eu un abonnement ou un essai ne doit pas récupérer un nouveau trial Stripe.
     if (admin) {
@@ -155,7 +151,6 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         email,
         profile_type: profileType,
-        promo_code: normalizedPromoCode,
         trial_days: String(trialDays),
       },
     };
@@ -181,7 +176,6 @@ export async function POST(request: NextRequest) {
         user_id: userId,
         email,
         profile_type: profileType,
-        promo_code: normalizedPromoCode,
         trial_days: String(trialDays),
       },
       success_url: `${siteUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,

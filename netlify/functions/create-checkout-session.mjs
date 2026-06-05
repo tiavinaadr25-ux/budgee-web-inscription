@@ -10,7 +10,6 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabasePublishableKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ??
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
-const bdePromoCode = process.env.BUDGEE_BDE_CODE?.trim().toUpperCase() ?? null;
 
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 const admin =
@@ -177,8 +176,6 @@ export const handler = async (event) => {
     const userId = String(payload.userId ?? '').trim();
     const fullName = String(payload.fullName ?? '').trim();
     const profileType = String(payload.profileType ?? '').trim();
-    const rawPromoCode = String(payload.promoCode ?? '').trim();
-    const normalizedPromoCode = rawPromoCode.toUpperCase();
     const email = authenticatedUser.email?.trim().toLowerCase();
 
     if (!userId || !email) {
@@ -193,8 +190,7 @@ export const handler = async (event) => {
       }, event);
     }
 
-    const trialDays =
-      normalizedPromoCode && bdePromoCode && normalizedPromoCode === bdePromoCode ? 14 : 7;
+    const trialDays = 7;
     const customerId = await getOrCreateStripeCustomer({
       userId,
       email,
@@ -220,7 +216,6 @@ export const handler = async (event) => {
           user_id: userId,
           email,
           profile_type: profileType,
-          promo_code: normalizedPromoCode,
           trial_days: String(trialDays),
         },
       },
@@ -228,7 +223,6 @@ export const handler = async (event) => {
         user_id: userId,
         email,
         profile_type: profileType,
-        promo_code: normalizedPromoCode,
         trial_days: String(trialDays),
       },
       success_url: `${siteUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
