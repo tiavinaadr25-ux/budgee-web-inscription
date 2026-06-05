@@ -1296,19 +1296,10 @@ export default function LandingClient() {
               </ol>
             </article>
           </div>
-          <div className="install-actions">
-            <button type="button" className="btn-primary" onClick={handleInstallPwa}>
-              {isStandaloneMode
-                ? 'Budgee est déjà installé'
-                : deferredInstallPrompt
-                  ? 'Installer Budgee maintenant'
-                  : 'Voir les étapes d’installation'}
-            </button>
-            <p className="install-note">
-              Budgee n’utilise pas de store pour cette version : l’installation se
-              fait directement depuis ton navigateur.
-            </p>
-          </div>
+          <p className="install-note">
+            Budgee n’utilise pas de store pour cette version : l’installation se
+            fait directement depuis ton navigateur.
+          </p>
         </section>
 
         <section className="card fade-up">

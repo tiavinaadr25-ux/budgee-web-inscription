@@ -449,13 +449,6 @@ body {
   line-height: 1.45;
 }
 
-.install-actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
-
 .install-note {
   color: var(--muted);
   font-size: 0.82rem;
