@@ -18,11 +18,6 @@ const pendingSignupStorageKey = 'budgee-pending-signup';
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
-type InstallContext = 'ios' | 'android' | 'desktop';
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
-};
 
 type PendingSignup = {
   email: string;
@@ -291,10 +286,6 @@ export default function LandingClient() {
   const [toastVisible, setToastVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAppActions, setShowAppActions] = useState(false);
-  const [deferredInstallPrompt, setDeferredInstallPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [isStandaloneMode, setIsStandaloneMode] = useState(false);
-  const [installContext, setInstallContext] = useState<InstallContext>('desktop');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -323,45 +314,40 @@ export default function LandingClient() {
     setStatusVariant(variant);
   }
 
-  function scrollToInstallSection() {
-    document.getElementById('installer-pwa')?.scrollIntoView({
+  function scrollToAuthSection() {
+    document.getElementById('inscription')?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     });
   }
 
-  async function handleInstallPwa(
-    event?: MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
-  ) {
+  function scrollToInstallSection() {
+    document.getElementById('guide-app')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }
+
+  function openBudgeeApp() {
+    window.location.assign('/app');
+  }
+
+  function redirectToBudgeeApp(delay = 250) {
+    window.setTimeout(() => {
+      openBudgeeApp();
+    }, delay);
+  }
+
+  function openSignupSection(event?: MouseEvent<HTMLAnchorElement>) {
     event?.preventDefault();
+    setAuthMode('signup');
+    scrollToAuthSection();
+  }
 
-    if (isStandaloneMode) {
-      scrollToInstallSection();
-      showToast('Budgee est déjà installé sur cet appareil.');
-      return;
-    }
-
-    if (deferredInstallPrompt) {
-      try {
-        await deferredInstallPrompt.prompt();
-        const installChoice = await deferredInstallPrompt.userChoice;
-        if (installChoice.outcome === 'accepted') {
-          showToast('Installation de Budgee lancée');
-        }
-      } catch (installError) {
-        console.warn('Impossible de lancer le prompt PWA Budgee.', installError);
-      } finally {
-        setDeferredInstallPrompt(null);
-      }
-      return;
-    }
-
-    scrollToInstallSection();
-    showToast(
-      installContext === 'ios'
-        ? 'Sur iPhone : partage Safari puis Sur l’écran d’accueil.'
-        : 'Retrouve juste en dessous les étapes pour installer Budgee.',
-    );
+  function openLoginSection(event?: MouseEvent<HTMLAnchorElement>) {
+    event?.preventDefault();
+    setAuthMode('login');
+    scrollToAuthSection();
   }
 
   function setAuthMode(mode: AuthMode) {
@@ -373,7 +359,7 @@ export default function LandingClient() {
         ? '7 jours gratuits sans carte. Accès immédiat à Budgee.'
         : mode === 'recovery'
           ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
-          : 'Connecte-toi pour reprendre ton budget.',
+          : 'Connecte-toi pour ouvrir Budgee et reprendre ton budget.',
       'info',
     );
   }
@@ -530,14 +516,12 @@ export default function LandingClient() {
         setAuthModeState('login');
         setShowAppActions(true);
         setStatus(
-          'Ton essai gratuit de 7 jours est activé. Installe Budgee sur ton écran d’accueil pour commencer.',
+          'Ton essai gratuit de 7 jours est activé. On t’ouvre Budgee pour commencer.',
           'success',
         );
         showToast('Essai Budgee activé');
         clearPendingSignup();
-        window.setTimeout(() => {
-          scrollToInstallSection();
-        }, 250);
+        redirectToBudgeeApp();
       } catch (betaError) {
         setStatus(
           betaError instanceof Error
@@ -581,10 +565,11 @@ export default function LandingClient() {
       if (hasSubscriptionAccess(currentSubscription)) {
         setShowAppActions(true);
         setStatus(
-          'Connexion réussie. Ton accès Budgee est actif, tu peux installer Budgee sur ton écran d’accueil.',
+          'Connexion réussie. Ton accès Budgee est actif, on t’ouvre ton app.',
           'success',
         );
         showToast('Accès Budgee actif');
+        redirectToBudgeeApp();
         return;
       }
 
@@ -598,10 +583,11 @@ export default function LandingClient() {
         if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
           setShowAppActions(true);
           setStatus(
-            'Félicitations ! Ton essai gratuit de 7 jours est activé. Tu peux installer Budgee sur ton écran d’accueil.',
+            'Félicitations ! Ton essai gratuit de 7 jours est activé. On t’ouvre Budgee.',
             'success',
           );
           showToast('Essai gratuit activé !');
+          redirectToBudgeeApp();
           return;
         }
       }
@@ -672,29 +658,29 @@ export default function LandingClient() {
 
         clearPendingSignup();
         setAuthModeState('login');
-        setShowAppActions(true);
 
-        if (checkoutConfirmed || !checkoutSessionId) {
+        if (checkoutConfirmed) {
+          setShowAppActions(true);
           setStatus(
-            'Paiement enregistré. Installe Budgee sur ton écran d’accueil pour le retrouver comme une app.',
+            'Paiement enregistré. Budgee est prêt, on t’ouvre ton app.',
             'success',
           );
           showToast('Essai Budgee activé');
+          redirectToBudgeeApp();
         } else if (checkoutConfirmationError) {
+          setShowAppActions(false);
           setStatus(checkoutConfirmationError.message, 'info');
           showToast('Paiement à confirmer');
         } else {
+          setShowAppActions(false);
           setStatus(
-            'Paiement revenu. Connecte-toi juste après pour finaliser l’activation de ton accès Budgee.',
+            'Paiement revenu. Connecte-toi juste après pour ouvrir ton accès Budgee.',
             'info',
           );
           showToast('Paiement à confirmer');
         }
 
         window.history.replaceState({}, document.title, window.location.pathname);
-        window.setTimeout(() => {
-          scrollToInstallSection();
-        }, 250);
       } else if (searchParams.get('checkout') === 'cancel') {
         setAuthModeState('login');
         setShowAppActions(false);
@@ -745,15 +731,13 @@ export default function LandingClient() {
             clearPendingSignup();
             setShowAppActions(true);
             setStatus(
-              'Tu es connectée. Ton accès Budgee est actif, tu peux installer Budgee sur ton écran d’accueil.',
+              'Tu es connectée. Ton accès Budgee est actif, on t’ouvre ton app.',
               'success',
             );
+            redirectToBudgeeApp(isConfirmingEmail ? 400 : 200);
 
             if (isConfirmingEmail) {
               showToast('Bienvenue sur Budgee !');
-              window.setTimeout(() => {
-                scrollToInstallSection();
-              }, 250);
             }
           } else {
             if (isConfirmingEmail && !currentSubscription) {
@@ -769,14 +753,12 @@ export default function LandingClient() {
               if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
                 setShowAppActions(true);
                 setStatus(
-                  'Félicitations ! Ton essai gratuit est actif. Installe Budgee sur ton écran d’accueil pour commencer.',
+                  'Félicitations ! Ton essai gratuit est actif. On t’ouvre Budgee pour commencer.',
                   'success',
                 );
                 showToast('Essai gratuit activé !');
                 clearPendingSignup();
-                window.setTimeout(() => {
-                  scrollToInstallSection();
-                }, 250);
+                redirectToBudgeeApp();
               } else {
                 // Si l'activation a échoué (déjà eu un essai), on redirige vers le paiement
                 setStatus(
@@ -789,7 +771,7 @@ export default function LandingClient() {
             } else {
               setShowAppActions(false);
               setStatus(
-                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer.',
+                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer avec Budgee.',
                 'info',
               );
             }
@@ -827,50 +809,6 @@ export default function LandingClient() {
       if (toastTimer.current) {
         clearTimeout(toastTimer.current);
       }
-    };
-  }, []);
-
-  useEffect(() => {
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    const isAndroidDevice = /android/.test(userAgent);
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
-
-    setInstallContext(isIosDevice ? 'ios' : isAndroidDevice ? 'android' : 'desktop');
-    setIsStandaloneMode(standalone);
-
-    // DECISION: on enregistre un service worker minimal pour rendre Budgee installable en PWA sans ajouter une dépendance supplémentaire.
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch((serviceWorkerError) => {
-        console.warn('Service worker Budgee non enregistré.', serviceWorkerError);
-      });
-    }
-
-    const handleBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredInstallPrompt(event as BeforeInstallPromptEvent);
-    };
-
-    const handleAppInstalled = () => {
-      setDeferredInstallPrompt(null);
-      setIsStandaloneMode(true);
-      showToast('Budgee est installé sur ton écran d’accueil');
-    };
-
-    window.addEventListener(
-      'beforeinstallprompt',
-      handleBeforeInstallPrompt as EventListener,
-    );
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener(
-        'beforeinstallprompt',
-        handleBeforeInstallPrompt as EventListener,
-      );
-      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -950,14 +888,10 @@ export default function LandingClient() {
             budgee
           </a>
           <div className="nav-actions">
-            <a
-              href="#installer-pwa"
-              className="nav-app-link"
-              onClick={handleInstallPwa}
-            >
-              📲 Installer la PWA
+            <a href="#inscription" className="nav-app-link" onClick={openLoginSection}>
+              Se connecter
             </a>
-            <a href="#inscription" className="nav-cta">
+            <a href="#inscription" className="nav-cta" onClick={openSignupSection}>
               Commencer mon essai gratuit
               <svg
                 viewBox="0 0 14 14"
@@ -994,7 +928,7 @@ export default function LandingClient() {
               combien tu peux encore dépenser jusqu&apos;au bout du mois.
             </p>
             <div className="cta-group">
-              <a href="#inscription" className="btn-primary">
+              <a href="#inscription" className="btn-primary" onClick={openSignupSection}>
                 Commencer mon essai gratuit — 7 jours offerts
                 <svg
                   width="13"
@@ -1010,9 +944,9 @@ export default function LandingClient() {
                 </svg>
               </a>
               <div className="reassurance-line">
-                <span>Période d&apos;essai</span>
-                <span>Aucun prélèvement avant J+7</span>
-                <span>Résiliation en 1 clic</span>
+                <span>7 jours pour tester</span>
+                <span>Sans carte au départ</span>
+                <span>Paiement seulement si tu continues</span>
               </div>
             </div>
             <div className="sales-trio">
@@ -1244,61 +1178,53 @@ export default function LandingClient() {
 
         <section className="card fade-up">
           <div className="section-kicker">PWA</div>
-          <h3 className="section-h" id="installer-pwa">
-            Installe Budgee sur ton écran d&apos;accueil
+          <h3 className="section-h" id="guide-app">
+            Ouvre Budgee puis installe l&apos;app sur ton écran d&apos;accueil
           </h3>
           <p className="section-sub">
-            Budgee web s&apos;installe comme une app, sans App Store ni Play Store.
-            Tu gardes un accès rapide au site et à ton compte depuis ton téléphone
-            ou ton ordinateur.
+            La landing te sert à créer ton compte et te connecter. Une fois ton
+            accès actif, on t&apos;ouvre la vraie app Budgee sur <code>/app</code>,
+            et c&apos;est depuis cette app que tu peux l&apos;installer comme une PWA.
           </p>
           <div className="install-banner">
             <strong>
-              {isStandaloneMode
-                ? 'Budgee est déjà installé sur cet appareil.'
-                : deferredInstallPrompt
-                  ? 'Ton navigateur peut installer Budgee en un clic.'
-                  : installContext === 'ios'
-                    ? 'Sur iPhone, l’installation se fait depuis le menu Partager de Safari.'
-                    : installContext === 'android'
-                      ? 'Sur Android, l’installation se fait depuis le menu de Chrome.'
-                      : 'Sur ordinateur, Chrome ou Edge peuvent installer Budgee.'}
+              Après connexion, Budgee t&apos;ouvre directement l&apos;app sur le même
+              domaine.
             </strong>
             <p>
-              {isStandaloneMode
-                ? 'Tu peux garder Budgee sur ton écran d’accueil et revenir quand tu veux.'
-                : 'Installe-le pour retrouver Budgee plus vite et préparer plus tard la vraie version web installable.'}
+              Si tu veux la garder comme une vraie app, ajoute ensuite cette page
+              <code>/app</code> à ton écran d&apos;accueil.
             </p>
           </div>
           <div className="install-grid">
             <article className="install-card">
               <span className="install-device-badge">iPhone / iPad</span>
               <ol className="install-steps">
-                <li>Ouvre Budgee dans Safari.</li>
-                <li>Appuie sur Partager.</li>
+                <li>Connecte-toi puis ouvre Budgee dans Safari.</li>
+                <li>Quand l&apos;app Budgee est ouverte, appuie sur Partager.</li>
                 <li>Choisis Sur l’écran d’accueil puis Ajouter.</li>
               </ol>
             </article>
             <article className="install-card">
               <span className="install-device-badge">Android</span>
               <ol className="install-steps">
-                <li>Ouvre Budgee dans Chrome.</li>
-                <li>Appuie sur le menu ⋮.</li>
+                <li>Connecte-toi puis ouvre l&apos;app Budgee dans Chrome.</li>
+                <li>Appuie sur le menu ⋮ quand tu es dans l&apos;app.</li>
                 <li>Choisis Installer l’application.</li>
               </ol>
             </article>
             <article className="install-card">
               <span className="install-device-badge">Ordinateur</span>
               <ol className="install-steps">
-                <li>Ouvre Budgee dans Chrome ou Edge.</li>
-                <li>Utilise l’icône Installer dans la barre d’adresse.</li>
+                <li>Connecte-toi pour ouvrir Budgee sur <code>/app</code>.</li>
+                <li>Dans Chrome ou Edge, clique sur Installer.</li>
                 <li>Valide pour épingler Budgee comme une app.</li>
               </ol>
             </article>
           </div>
           <p className="install-note">
-            Budgee n’utilise pas de store pour cette version : l’installation se
-            fait directement depuis ton navigateur.
+            Tu n&apos;installes pas la landing : tu installes la vraie app Budgee,
+            une fois entrée dans <code>/app</code>.
           </p>
         </section>
 
@@ -1321,8 +1247,9 @@ export default function LandingClient() {
                 <li>Tes données sont sécurisées</li>
               </ul>
               <div className="pricing-disclaimer">
-                Après tes 7 jours gratuits, tu seras prélevé de 1,99 €
-                automatiquement. Tu peux résilier à tout moment en 1 clic.
+                Après tes 7 jours gratuits, Budgee te proposera de passer au
+                paiement sécurisé Stripe pour continuer à 1,99 € par mois. Tu peux
+                arrêter quand tu veux.
               </div>
             </div>
           </div>
@@ -1547,20 +1474,18 @@ export default function LandingClient() {
 
           {showAppActions && (
             <div className="action-row">
-              <button type="button" className="action-btn" onClick={handleInstallPwa}>
-                {deferredInstallPrompt
-                  ? 'Installer Budgee'
-                  : 'Voir comment installer Budgee'}
+              <button type="button" className="action-btn" onClick={openBudgeeApp}>
+                Ouvrir Budgee
               </button>
               <a
-                href="#installer-pwa"
+                href="#guide-app"
                 className="action-btn action-btn-secondary"
                 onClick={(event) => {
                   event.preventDefault();
                   scrollToInstallSection();
                 }}
               >
-                Guide PWA
+                Guide d’installation
               </a>
             </div>
           )}
@@ -1570,8 +1495,8 @@ export default function LandingClient() {
           <div className="footer-left">
             <h3>Budgee est prêt pour ton essai gratuit.</h3>
             <p>
-              Commence sur le site, puis ajoute Budgee à ton écran d&apos;accueil
-              comme une web app.
+              Commence sur le site, puis ouvre Budgee dans la vraie app web sur
+              <code>/app</code>.
             </p>
           </div>
           <div className="footer-links">

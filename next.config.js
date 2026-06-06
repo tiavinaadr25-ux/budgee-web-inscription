@@ -60,6 +60,15 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return {
+      fallback: [
+        { source: '/app', destination: '/app/index.html' },
+        { source: '/app/', destination: '/app/index.html' },
+        { source: '/app/:path*', destination: '/app/index.html' },
+      ],
+    };
+  },
 };
 
 module.exports = nextConfig;

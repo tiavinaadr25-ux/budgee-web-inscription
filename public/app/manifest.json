@@ -1,0 +1,25 @@
+{
+  "short_name": "Budgee",
+  "name": "Budgee - budget etudiant",
+  "description": "Budgee aide les etudiants a suivre leur budget, enregistrer leurs depenses et garder une vraie visibilite sur leur mois.",
+  "lang": "fr",
+  "start_url": "/app/",
+  "scope": "/app/",
+  "display": "standalone",
+  "theme_color": "#2558A0",
+  "background_color": "#F4EDE0",
+  "icons": [
+    {
+      "src": "/app/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/app/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

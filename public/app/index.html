@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+    <title>Budgee</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Budgee" />
+    <link rel="manifest" href="/app/manifest.json" />
+    <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
+    <link rel="icon" href="/app/favicon.ico" />
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        overflow: hidden;
+      }
+
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/app/sw.js').catch(function (error) {
+            console.error('Budgee service worker registration failed:', error);
+          });
+        });
+      }
+    </script>
+  <meta name="theme-color" content="#2558A0">
+<meta name="description" content="L'application budget etudiant Budgee en version web installable.">
+</head>
+
+  <body>
+    <noscript>Active JavaScript pour utiliser Budgee.</noscript>
+    <div id="root"></div>
+  <script src="/_expo/static/js/web/index-c952bf7e62b4bdb46f1dfb6cf94ee54a.js" defer></script>
+</body>
+</html>
