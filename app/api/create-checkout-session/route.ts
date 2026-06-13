@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       return jsonResponse(
         request,
         {
-          error: 'Le compte Budgee doit être créé avant de lancer le paiement.',
+          error: 'Le compte Kloo doit être créé avant de lancer le paiement.',
         },
         { status: 400 },
       );
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     assertAuthenticatedUser(authenticatedUser, userId);
     const email = authenticatedUser.email?.trim().toLowerCase();
     if (!email) {
-      throw new ApiRouteError('Email Budgee introuvable pour ce compte.', 400);
+      throw new ApiRouteError('Email Kloo introuvable pour ce compte.', 400);
     }
 
     let trialDays = 7;

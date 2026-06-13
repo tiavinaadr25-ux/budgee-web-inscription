@@ -23,9 +23,9 @@ const siteUrl = process.env.SITE_URL?.trim();
 export const metadata: Metadata = {
   metadataBase: siteUrl ? new URL(siteUrl) : undefined,
   title:
-    "Budgee - L'application de budget étudiant pour comprendre ses dépenses et éviter les fins de mois galères",
+    "Kloo - L'application de budget étudiant pour comprendre ses dépenses et éviter les fins de mois galères",
   description:
-    "Budgee est l'application de budget étudiant qui t'aide à voir où part ton argent, éviter d'être à sec avant la fin du mois et reprendre le contrôle simplement. 7 jours d'essai gratuit.",
+    "Kloo est l'application de budget étudiant qui t'aide à voir où part ton argent, éviter d'être à sec avant la fin du mois et reprendre le contrôle simplement. 7 jours d'essai gratuit.",
   icons: {
     icon: '/icon.svg',
     apple: '/apple-touch-icon.svg',

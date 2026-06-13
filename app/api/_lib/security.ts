@@ -111,12 +111,12 @@ export async function requireAuthenticatedUser(request: NextRequest) {
 
   const authorizationHeader = request.headers.get('authorization') ?? '';
   if (!authorizationHeader.startsWith('Bearer ')) {
-    throw new ApiRouteError('Session Budgee manquante.', 401);
+    throw new ApiRouteError('Session Kloo manquante.', 401);
   }
 
   const accessToken = authorizationHeader.slice('Bearer '.length).trim();
   if (!accessToken) {
-    throw new ApiRouteError('Session Budgee invalide.', 401);
+    throw new ApiRouteError('Session Kloo invalide.', 401);
   }
 
   const {
@@ -125,7 +125,7 @@ export async function requireAuthenticatedUser(request: NextRequest) {
   } = await authClient.auth.getUser(accessToken);
 
   if (error || !user) {
-    throw new ApiRouteError('Session Budgee invalide.', 401);
+    throw new ApiRouteError('Session Kloo invalide.', 401);
   }
 
   return user;
@@ -133,6 +133,6 @@ export async function requireAuthenticatedUser(request: NextRequest) {
 
 export function assertAuthenticatedUser(user: User, expectedUserId: string) {
   if (!expectedUserId || user.id !== expectedUserId) {
-    throw new ApiRouteError('Compte Budgee invalide.', 403);
+    throw new ApiRouteError('Compte Kloo invalide.', 403);
   }
 }

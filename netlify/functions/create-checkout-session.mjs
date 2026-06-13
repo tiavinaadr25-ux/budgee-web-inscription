@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
 // DEPRECATED: cette fonction Netlify legacy reste publiée uniquement pour compatibilité
-// temporaire. Le flux principal Budgee passe désormais par /api/create-checkout-session.
+// temporaire. Le flux principal Kloo passe désormais par /api/create-checkout-session.
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripePriceId = process.env.STRIPE_PRICE_ID;
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -100,12 +100,12 @@ async function requireAuthenticatedUser(event) {
 
   const authorizationHeader = event.headers.authorization ?? event.headers.Authorization ?? '';
   if (!authorizationHeader.startsWith('Bearer ')) {
-    throw new ApiRouteError('Session Budgee manquante.', 401);
+    throw new ApiRouteError('Session Kloo manquante.', 401);
   }
 
   const accessToken = authorizationHeader.slice('Bearer '.length).trim();
   if (!accessToken) {
-    throw new ApiRouteError('Session Budgee invalide.', 401);
+    throw new ApiRouteError('Session Kloo invalide.', 401);
   }
 
   const {
@@ -114,7 +114,7 @@ async function requireAuthenticatedUser(event) {
   } = await authClient.auth.getUser(accessToken);
 
   if (error || !user) {
-    throw new ApiRouteError('Session Budgee invalide.', 401);
+    throw new ApiRouteError('Session Kloo invalide.', 401);
   }
 
   return user;
@@ -180,13 +180,13 @@ export const handler = async (event) => {
 
     if (!userId || !email) {
       return json(400, {
-        error: 'Le compte Budgee doit être créé avant de lancer le paiement.',
+        error: 'Le compte Kloo doit être créé avant de lancer le paiement.',
       }, event);
     }
 
     if (authenticatedUser.id !== userId) {
       return json(403, {
-        error: 'Compte Budgee invalide.',
+        error: 'Compte Kloo invalide.',
       }, event);
     }
 

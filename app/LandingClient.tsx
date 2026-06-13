@@ -69,7 +69,7 @@ function hasSubscriptionAccess(
 function getSupabaseClient() {
   if (!supabase) {
     throw new Error(
-      'Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY pour activer Budgee web.',
+      'Ajoute NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY pour activer Kloo web.',
     );
   }
 
@@ -144,7 +144,7 @@ async function confirmCheckoutSession(sessionId: string, accessToken?: string) {
 
   if (!response.ok) {
     throw new Error(
-      payload.error || 'Le paiement est revenu, mais Budgee n’a pas encore confirmé ton essai.',
+      payload.error || 'Le paiement est revenu, mais Kloo n’a pas encore confirmé ton essai.',
     );
   }
 
@@ -174,7 +174,7 @@ async function syncStripeAccess({
 
   if (!response.ok) {
     throw new Error(
-      payload.error || 'Impossible de vérifier ton essai Budgee pour le moment.',
+      payload.error || 'Impossible de vérifier ton essai Kloo pour le moment.',
     );
   }
 
@@ -187,7 +187,7 @@ async function getAuthorizedJsonHeaders(explicitAccessToken?: string) {
     (await getSupabaseClient().auth.getSession()).data.session?.access_token?.trim();
 
   if (!accessToken) {
-    throw new Error('Reconnecte-toi à Budgee pour continuer en sécurité.');
+    throw new Error('Reconnecte-toi à Kloo pour continuer en sécurité.');
   }
 
   return {
@@ -215,7 +215,7 @@ function savePendingSignup(payload: PendingSignup) {
   try {
     localStorage.setItem(pendingSignupStorageKey, JSON.stringify(payload));
   } catch (storageError) {
-    console.warn('Impossible de mémoriser le signup Budgee.', storageError);
+    console.warn('Impossible de mémoriser le signup Kloo.', storageError);
   }
 }
 
@@ -228,7 +228,7 @@ function readPendingSignup() {
 
     return JSON.parse(rawValue) as PendingSignup;
   } catch (storageError) {
-    console.warn('Impossible de lire le signup Budgee en attente.', storageError);
+    console.warn('Impossible de lire le signup Kloo en attente.', storageError);
     return null;
   }
 }
@@ -237,7 +237,7 @@ function clearPendingSignup() {
   try {
     localStorage.removeItem(pendingSignupStorageKey);
   } catch (storageError) {
-    console.warn('Impossible de nettoyer le signup Budgee en attente.', storageError);
+    console.warn('Impossible de nettoyer le signup Kloo en attente.', storageError);
   }
 }
 
@@ -277,11 +277,11 @@ export default function LandingClient() {
   const isSupabaseConfigured = Boolean(supabase);
   const [authMode, setAuthModeState] = useState<AuthMode>('signup');
   const [statusMessage, setStatusMessage] = useState(
-    '7 jours gratuits sans carte. Accès immédiat à Budgee.',
+    '7 jours gratuits sans carte. Accès immédiat à Kloo.',
   );
   const [statusVariant, setStatusVariant] = useState<StatusVariant>('info');
   const [toastMessage, setToastMessage] = useState(
-    'Budgee est prêt pour ton essai gratuit.',
+    'Kloo est prêt pour ton essai gratuit.',
   );
   const [toastVisible, setToastVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -356,10 +356,10 @@ export default function LandingClient() {
 
     setStatus(
       mode === 'signup'
-        ? '7 jours gratuits sans carte. Accès immédiat à Budgee.'
+        ? '7 jours gratuits sans carte. Accès immédiat à Kloo.'
         : mode === 'recovery'
           ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
-          : 'Connecte-toi pour ouvrir Budgee et reprendre ton budget.',
+          : 'Connecte-toi pour ouvrir Kloo et reprendre ton budget.',
       'info',
     );
   }
@@ -421,10 +421,10 @@ export default function LandingClient() {
     setIsSubmitting(true);
     setStatus(
       authMode === 'signup'
-        ? 'On prépare ton accès Budgee...'
+        ? 'On prépare ton accès Kloo...'
         : authMode === 'recovery'
           ? 'Mise à jour de ton mot de passe...'
-          : 'Connexion à ton espace Budgee...',
+          : 'Connexion à ton espace Kloo...',
       'info',
     );
 
@@ -482,7 +482,7 @@ export default function LandingClient() {
       data.user.identities.length === 0
     ) {
       const message =
-        'Cet email a déjà un compte. Essaie de te connecter depuis l’app Budgee.';
+        'Cet email a déjà un compte. Essaie de te connecter depuis l’app Kloo.';
       setStatus(message, 'error');
       showToast(message);
       return;
@@ -516,10 +516,10 @@ export default function LandingClient() {
         setAuthModeState('login');
         setShowAppActions(true);
         setStatus(
-          'Ton essai gratuit de 7 jours est activé. On t’ouvre Budgee pour commencer.',
+          'Ton essai gratuit de 7 jours est activé. On t’ouvre Kloo pour commencer.',
           'success',
         );
-        showToast('Essai Budgee activé');
+        showToast('Essai Kloo activé');
         clearPendingSignup();
         redirectToBudgeeApp();
       } catch (betaError) {
@@ -565,10 +565,10 @@ export default function LandingClient() {
       if (hasSubscriptionAccess(currentSubscription)) {
         setShowAppActions(true);
         setStatus(
-          'Connexion réussie. Ton accès Budgee est actif, on t’ouvre ton app.',
+          'Connexion réussie. Ton accès Kloo est actif, on t’ouvre ton app.',
           'success',
         );
-        showToast('Accès Budgee actif');
+        showToast('Accès Kloo actif');
         redirectToBudgeeApp();
         return;
       }
@@ -583,7 +583,7 @@ export default function LandingClient() {
         if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
           setShowAppActions(true);
           setStatus(
-            'Félicitations ! Ton essai gratuit de 7 jours est activé. On t’ouvre Budgee.',
+            'Félicitations ! Ton essai gratuit de 7 jours est activé. On t’ouvre Kloo.',
             'success',
           );
           showToast('Essai gratuit activé !');
@@ -651,7 +651,7 @@ export default function LandingClient() {
               error instanceof Error
                 ? error
                 : new Error(
-                    'Le paiement est revenu, mais Budgee n’a pas encore confirmé ton essai.',
+                    'Le paiement est revenu, mais Kloo n’a pas encore confirmé ton essai.',
                   );
           }
         }
@@ -662,10 +662,10 @@ export default function LandingClient() {
         if (checkoutConfirmed) {
           setShowAppActions(true);
           setStatus(
-            'Paiement enregistré. Budgee est prêt, on t’ouvre ton app.',
+            'Paiement enregistré. Kloo est prêt, on t’ouvre ton app.',
             'success',
           );
-          showToast('Essai Budgee activé');
+          showToast('Essai Kloo activé');
           redirectToBudgeeApp();
         } else if (checkoutConfirmationError) {
           setShowAppActions(false);
@@ -674,7 +674,7 @@ export default function LandingClient() {
         } else {
           setShowAppActions(false);
           setStatus(
-            'Paiement revenu. Connecte-toi juste après pour ouvrir ton accès Budgee.',
+            'Paiement revenu. Connecte-toi juste après pour ouvrir ton accès Kloo.',
             'info',
           );
           showToast('Paiement à confirmer');
@@ -685,7 +685,7 @@ export default function LandingClient() {
         setAuthModeState('login');
         setShowAppActions(false);
         setStatus(
-          'Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Budgee.',
+          'Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Kloo.',
           'error',
         );
       } else if (
@@ -694,7 +694,7 @@ export default function LandingClient() {
       ) {
         setAuthModeState('recovery');
         setStatus(
-          'Choisis ton nouveau mot de passe pour récupérer ton compte Budgee.',
+          'Choisis ton nouveau mot de passe pour récupérer ton compte Kloo.',
           'info',
         );
       } else if (sessionData?.session) {
@@ -731,13 +731,13 @@ export default function LandingClient() {
             clearPendingSignup();
             setShowAppActions(true);
             setStatus(
-              'Tu es connectée. Ton accès Budgee est actif, on t’ouvre ton app.',
+              'Tu es connectée. Ton accès Kloo est actif, on t’ouvre ton app.',
               'success',
             );
             redirectToBudgeeApp(isConfirmingEmail ? 400 : 200);
 
             if (isConfirmingEmail) {
-              showToast('Bienvenue sur Budgee !');
+              showToast('Bienvenue sur Kloo !');
             }
           } else {
             if (isConfirmingEmail && !currentSubscription) {
@@ -753,7 +753,7 @@ export default function LandingClient() {
               if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
                 setShowAppActions(true);
                 setStatus(
-                  'Félicitations ! Ton essai gratuit est actif. On t’ouvre Budgee pour commencer.',
+                  'Félicitations ! Ton essai gratuit est actif. On t’ouvre Kloo pour commencer.',
                   'success',
                 );
                 showToast('Essai gratuit activé !');
@@ -771,7 +771,7 @@ export default function LandingClient() {
             } else {
               setShowAppActions(false);
               setStatus(
-                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer avec Budgee.',
+                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer avec Kloo.',
                 'info',
               );
             }
@@ -780,7 +780,7 @@ export default function LandingClient() {
           setStatus(
             subscriptionError instanceof Error
               ? subscriptionError.message
-              : "On n’a pas réussi à vérifier ton abonnement Budgee.",
+              : "On n’a pas réussi à vérifier ton abonnement Kloo.",
             'error',
           );
         }
@@ -795,7 +795,7 @@ export default function LandingClient() {
           setAuthModeState('login');
           setShowAppActions(false);
           setStatus(
-            'Email confirmé. Tu peux maintenant te connecter avec ton compte Budgee.',
+            'Email confirmé. Tu peux maintenant te connecter avec ton compte Kloo.',
             'success',
           );
           showToast('Email confirmé');
@@ -834,7 +834,7 @@ export default function LandingClient() {
   }, []);
 
   const authTitle = isSignup
-    ? 'Commence ton essai Budgee'
+    ? 'Commence ton essai Kloo'
     : isRecovery
       ? 'Choisis un nouveau mot de passe'
       : 'Connecte-toi et retrouve ton budget';
@@ -842,7 +842,7 @@ export default function LandingClient() {
   const authCopy = isSignup
     ? 'Crée ton compte puis démarre ton essai gratuit.'
     : isRecovery
-      ? 'Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Budgee.'
+      ? 'Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Kloo.'
       : 'Connecte-toi pour retrouver ton budget.';
 
   const submitLabel = isSubmitting
@@ -865,7 +865,7 @@ export default function LandingClient() {
         <div className="page">
           <section className="card">
             <div className="section-kicker">Configuration</div>
-            <h1 className="section-h">Budgee web n’est pas encore configuré</h1>
+            <h1 className="section-h">Kloo web n’est pas encore configuré</h1>
             <p className="section-sub">
               Ajoute <code>NEXT_PUBLIC_SUPABASE_URL</code> et{' '}
               <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> dans les variables
@@ -885,7 +885,7 @@ export default function LandingClient() {
       <div className="page">
         <nav className="nav fade-up">
           <a href="#" className="brand">
-            budgee
+            kloo
           </a>
           <div className="nav-actions">
             <a href="#inscription" className="nav-app-link" onClick={openLoginSection}>
@@ -1132,14 +1132,14 @@ export default function LandingClient() {
             </div>
           </div>
           <p className="transition-line">
-            Quand tu vois mieux, tu gères mieux. Budgee te donne cette visibilité en
+            Quand tu vois mieux, tu gères mieux. Kloo te donne cette visibilité en
             2 minutes.
           </p>
         </section>
 
         <section className="card fade-up">
           <div className="section-kicker">La solution</div>
-          <h3 className="section-h">Budgee te simplifie la vie</h3>
+          <h3 className="section-h">Kloo te simplifie la vie</h3>
           <p className="section-sub">
             Pas de tableaux compliqués. Pas de jargon. Juste ce qu&apos;il faut pour
             piloter ton mois.
@@ -1179,16 +1179,16 @@ export default function LandingClient() {
         <section className="card fade-up">
           <div className="section-kicker">PWA</div>
           <h3 className="section-h" id="guide-app">
-            Ouvre Budgee puis installe l&apos;app sur ton écran d&apos;accueil
+            Ouvre Kloo puis installe l&apos;app sur ton écran d&apos;accueil
           </h3>
           <p className="section-sub">
             La landing te sert à créer ton compte et te connecter. Une fois ton
-            accès actif, on t&apos;ouvre la vraie app Budgee sur <code>/app</code>,
+            accès actif, on t&apos;ouvre la vraie app Kloo sur <code>/app</code>,
             et c&apos;est depuis cette app que tu peux l&apos;installer comme une PWA.
           </p>
           <div className="install-banner">
             <strong>
-              Après connexion, Budgee t&apos;ouvre directement l&apos;app sur le même
+              Après connexion, Kloo t&apos;ouvre directement l&apos;app sur le même
               domaine.
             </strong>
             <p>
@@ -1200,15 +1200,15 @@ export default function LandingClient() {
             <article className="install-card">
               <span className="install-device-badge">iPhone / iPad</span>
               <ol className="install-steps">
-                <li>Connecte-toi puis ouvre Budgee dans Safari.</li>
-                <li>Quand l&apos;app Budgee est ouverte, appuie sur Partager.</li>
+                <li>Connecte-toi puis ouvre Kloo dans Safari.</li>
+                <li>Quand l&apos;app Kloo est ouverte, appuie sur Partager.</li>
                 <li>Choisis Sur l’écran d’accueil puis Ajouter.</li>
               </ol>
             </article>
             <article className="install-card">
               <span className="install-device-badge">Android</span>
               <ol className="install-steps">
-                <li>Connecte-toi puis ouvre l&apos;app Budgee dans Chrome.</li>
+                <li>Connecte-toi puis ouvre l&apos;app Kloo dans Chrome.</li>
                 <li>Appuie sur le menu ⋮ quand tu es dans l&apos;app.</li>
                 <li>Choisis Installer l’application.</li>
               </ol>
@@ -1216,14 +1216,14 @@ export default function LandingClient() {
             <article className="install-card">
               <span className="install-device-badge">Ordinateur</span>
               <ol className="install-steps">
-                <li>Connecte-toi pour ouvrir Budgee sur <code>/app</code>.</li>
+                <li>Connecte-toi pour ouvrir Kloo sur <code>/app</code>.</li>
                 <li>Dans Chrome ou Edge, clique sur Installer.</li>
-                <li>Valide pour épingler Budgee comme une app.</li>
+                <li>Valide pour épingler Kloo comme une app.</li>
               </ol>
             </article>
           </div>
           <p className="install-note">
-            Tu n&apos;installes pas la landing : tu installes la vraie app Budgee,
+            Tu n&apos;installes pas la landing : tu installes la vraie app Kloo,
             une fois entrée dans <code>/app</code>.
           </p>
         </section>
@@ -1247,7 +1247,7 @@ export default function LandingClient() {
                 <li>Tes données sont sécurisées</li>
               </ul>
               <div className="pricing-disclaimer">
-                Après tes 7 jours gratuits, Budgee te proposera de passer au
+                Après tes 7 jours gratuits, Kloo te proposera de passer au
                 paiement sécurisé Stripe pour continuer à 1,99 € par mois. Tu peux
                 arrêter quand tu veux.
               </div>
@@ -1475,7 +1475,7 @@ export default function LandingClient() {
           {showAppActions && (
             <div className="action-row">
               <button type="button" className="action-btn" onClick={openBudgeeApp}>
-                Ouvrir Budgee
+                Ouvrir Kloo
               </button>
               <a
                 href="#guide-app"
@@ -1493,9 +1493,9 @@ export default function LandingClient() {
 
         <footer className="card footer">
           <div className="footer-left">
-            <h3>Budgee est prêt pour ton essai gratuit.</h3>
+            <h3>Kloo est prêt pour ton essai gratuit.</h3>
             <p>
-              Commence sur le site, puis ouvre Budgee dans la vraie app web sur
+              Commence sur le site, puis ouvre Kloo dans la vraie app web sur
               <code>/app</code>.
             </p>
           </div>

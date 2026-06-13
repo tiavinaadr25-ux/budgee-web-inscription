@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budgee-pwa-v1';
+const CACHE_NAME = 'kloo-pwa-v1';
 const getScopePath = () => {
   const scopeUrl = new URL(self.registration.scope);
   return scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : `${scopeUrl.pathname}/`;

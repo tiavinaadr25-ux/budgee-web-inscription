@@ -7,13 +7,13 @@
       name="viewport"
       content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
     />
-    <title>Budgee</title>
+    <title>Kloo</title>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Budgee" />
-    <link rel="manifest" href="/app/manifest.json" />
-    <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
-    <link rel="icon" href="/app/favicon.ico" />
+    <meta name="apple-mobile-web-app-title" content="Kloo" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" href="./favicon.ico" />
     <style id="expo-reset">
       html,
       body {
@@ -33,19 +33,19 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('/app/sw.js').catch(function (error) {
-            console.error('Budgee service worker registration failed:', error);
+          navigator.serviceWorker.register('./sw.js').catch(function (error) {
+            console.error('Kloo service worker registration failed:', error);
           });
         });
       }
     </script>
   <meta name="theme-color" content="#2558A0">
-<meta name="description" content="L'application budget etudiant Budgee en version web installable.">
+<meta name="description" content="L'application budget etudiant Kloo en version web installable.">
 </head>
 
   <body>
-    <noscript>Active JavaScript pour utiliser Budgee.</noscript>
+    <noscript>Active JavaScript pour utiliser Kloo.</noscript>
     <div id="root"></div>
-  <script src="/_expo/static/js/web/index-c952bf7e62b4bdb46f1dfb6cf94ee54a.js" defer></script>
+  <script src="/_expo/static/js/web/index-c9b082c8dbffe8086a5fadec46a9e69b.js" defer></script>
 </body>
 </html>

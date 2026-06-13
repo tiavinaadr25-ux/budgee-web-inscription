@@ -57,14 +57,14 @@ async function verifyProfileUser(userId: string, email: string) {
   }
 
   if (!data?.id) {
-    throw new Error('Compte Budgee introuvable.');
+    throw new Error('Compte Kloo introuvable.');
   }
 
   const normalizedProfileEmail = data.email?.trim().toLowerCase() ?? '';
   const normalizedEmail = email.trim().toLowerCase();
 
   if (normalizedEmail && normalizedProfileEmail && normalizedEmail !== normalizedProfileEmail) {
-    throw new Error('Compte Budgee invalide.');
+    throw new Error('Compte Kloo invalide.');
   }
 
   return {
@@ -167,7 +167,7 @@ async function syncBillingRecords(userId: string, customerId: string) {
     currency: invoice.currency.toUpperCase(),
     billed_at: fromUnix(invoice.status_transitions.paid_at || invoice.created),
     status: invoice.status === 'paid' ? 'paid' : (invoice.status === 'open' || invoice.status === 'draft') ? 'upcoming' : 'failed',
-    label: 'Abonnement Budgee',
+    label: 'Abonnement Kloo',
   }));
 
   if (records.length > 0) {
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     if (!rawUserId) {
       return jsonResponse(
         request,
-        { error: 'Compte Budgee manquant.' },
+        { error: 'Compte Kloo manquant.' },
         { status: 400 },
       );
     }

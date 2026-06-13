@@ -225,7 +225,7 @@ async function syncBillingRecord(invoice, fallbackUserId = null) {
       user_id: userId,
       subscription_id: subscriptionRowId,
       provider_invoice_id: invoice.id,
-      label: 'Abonnement Budgee',
+      label: 'Abonnement Kloo',
       amount: Number(((invoice.amount_paid || invoice.amount_due || 0) / 100).toFixed(2)),
       currency: (invoice.currency ?? 'eur').toUpperCase(),
       billed_at: fromUnix(invoice.status_transitions?.paid_at ?? invoice.created) ?? new Date().toISOString(),

@@ -195,7 +195,7 @@ async function syncSubscriptionRecord({
   // Ajout d'une ligne dans l'historique de facturation
   await admin.from('billing_records').insert({
     user_id: userId,
-    label: `Abonnement Budgee (${(subscription.currency ?? 'eur').toUpperCase()})`,
+    label: `Abonnement Kloo (${(subscription.currency ?? 'eur').toUpperCase()})`,
     amount: (subscription.items.data[0]?.price.unit_amount ?? 0) / 100,
     status: 'success',
     billed_at: fromUnix(subscription.current_period_start)
@@ -248,13 +248,13 @@ export async function POST(request: NextRequest) {
     if (!userId || typeof checkoutSession.subscription !== 'string') {
       return jsonResponse(
         request,
-        { error: 'Impossible de relier cette session Stripe à un compte Budgee.' },
+        { error: 'Impossible de relier cette session Stripe à un compte Kloo.' },
         { status: 400 },
       );
     }
 
     if (authenticatedUser.id !== userId) {
-      throw new ApiRouteError('Compte Budgee invalide.', 403);
+      throw new ApiRouteError('Compte Kloo invalide.', 403);
     }
 
     const subscription = await syncSubscriptionRecord({
