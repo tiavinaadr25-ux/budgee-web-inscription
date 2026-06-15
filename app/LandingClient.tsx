@@ -25,6 +25,44 @@ type PendingSignup = {
   profileType: string;
 };
 
+function getFriendlyAuthErrorMessage(error: Error & { code?: string; status?: number }, mode: AuthMode) {
+  const rawMessage = error.message.toLowerCase();
+
+  if (mode === 'signup') {
+    if (rawMessage.includes('already registered')) {
+      return 'Cet email a deja un compte. Passe en mode connexion juste au-dessus.';
+    }
+
+    if (
+      error.code === 'over_email_send_rate_limit' ||
+      error.status === 429 ||
+      rawMessage.includes('email rate limit exceeded')
+    ) {
+      return "Trop d'emails de confirmation ont ete envoyes pour l'instant. Attends un peu puis reessaie.";
+    }
+
+    if (error.code === 'email_address_invalid' || rawMessage.includes('email address') && rawMessage.includes('invalid')) {
+      return 'Cet email n est pas valide. Verifie son orthographe puis reessaie.';
+    }
+
+    return error.message.trim() || "Impossible de creer ton compte pour l'instant. Reessaie dans un instant.";
+  }
+
+  if (mode === 'recovery') {
+    if (
+      error.code === 'over_email_send_rate_limit' ||
+      error.status === 429 ||
+      rawMessage.includes('email rate limit exceeded')
+    ) {
+      return "Trop d'emails ont ete demandes pour l'instant. Attends un peu puis reessaie.";
+    }
+
+    return error.message.trim() || 'Impossible de mettre a jour ton mot de passe.';
+  }
+
+  return error.message.trim() || 'Email ou mot de passe incorrect.';
+}
+
 function hasSubscriptionAccess(
   subscription:
     | {
@@ -462,14 +500,8 @@ export default function LandingClient() {
     setIsSubmitting(false);
 
     if (error) {
-      const message =
-        authMode === 'signup'
-          ? error.message.includes('already registered')
-            ? 'Cet email a déjà un compte. Passe en mode connexion juste au-dessus.'
-            : "Impossible de créer ton compte pour l’instant. Réessaie dans un instant."
-          : authMode === 'recovery'
-            ? 'Impossible de mettre à jour ton mot de passe.'
-            : 'Email ou mot de passe incorrect.';
+      console.error('Erreur auth Supabase', error);
+      const message = getFriendlyAuthErrorMessage(error, authMode);
       setStatus(message, 'error');
       showToast(message);
       return;
@@ -856,7 +888,7 @@ export default function LandingClient() {
       : isRecovery
         ? 'Mettre à jour mon mot de passe'
         : 'Je me connecte';
-  const showForgotPassword = false;
+  const showForgotPassword = authMode === 'login';
 
   if (!isSupabaseConfigured) {
     return (
@@ -1448,7 +1480,7 @@ export default function LandingClient() {
                 fontWeight: 700,
               }}
             >
-              Mot de passe oublié ?
+              Modifier / réinitialiser mon mot de passe
             </a>
           )}
 
