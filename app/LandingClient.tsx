@@ -18,11 +18,16 @@ const pendingSignupStorageKey = 'budgee-pending-signup';
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
+type LandingClientVariant = 'full' | 'login' | 'password';
 
 type PendingSignup = {
   email: string;
   fullName: string;
   profileType: string;
+};
+
+type LandingClientProps = {
+  variant?: LandingClientVariant;
 };
 
 function getFriendlyAuthErrorMessage(error: Error & { code?: string; status?: number }, mode: AuthMode) {
@@ -245,8 +250,71 @@ function getAuthParams() {
   };
 }
 
-function getRedirectUrl() {
-  return window.location.href.split('#')[0];
+function buildPageUrl(pathname: string) {
+  return `${window.location.origin}${pathname}`;
+}
+
+function getSignupRedirectUrl() {
+  return buildPageUrl('/connexion');
+}
+
+function getRecoveryRedirectUrl() {
+  return buildPageUrl('/mot-de-passe');
+}
+
+function getCurrentUrlWithAuthParams(pathname: string) {
+  return `${buildPageUrl(pathname)}${window.location.search}${window.location.hash}`;
+}
+
+function getDefaultAuthMode(variant: LandingClientVariant): AuthMode {
+  if (variant === 'password') {
+    return 'recovery';
+  }
+
+  if (variant === 'login') {
+    return 'login';
+  }
+
+  return 'signup';
+}
+
+function getStatusMessageForMode(mode: AuthMode) {
+  if (mode === 'recovery') {
+    return 'Entre un nouveau mot de passe de 8 caractères minimum.';
+  }
+
+  if (mode === 'login') {
+    return 'Connecte-toi pour ouvrir Kloo et reprendre ton budget.';
+  }
+
+  return '7 jours d’essai avec paiement Stripe sécurisé. Résiliation en 1 clic.';
+}
+
+function isRecoveryAuthParams(authParams: ReturnType<typeof getAuthParams>) {
+  return authParams.hashType === 'recovery' || authParams.searchType === 'recovery';
+}
+
+function hasLoginAuthParams(authParams: ReturnType<typeof getAuthParams>) {
+  return (
+    authParams.hasAccessToken ||
+    authParams.hasCode ||
+    authParams.hashType === 'signup' ||
+    authParams.searchType === 'signup' ||
+    authParams.hashType === 'email' ||
+    authParams.searchType === 'email'
+  );
+}
+
+function getAuthRedirectPath(authParams: ReturnType<typeof getAuthParams>) {
+  if (isRecoveryAuthParams(authParams)) {
+    return '/mot-de-passe';
+  }
+
+  if (hasLoginAuthParams(authParams)) {
+    return '/connexion';
+  }
+
+  return null;
 }
 
 function savePendingSignup(payload: PendingSignup) {
@@ -288,34 +356,14 @@ function getPendingSignupForEmail(email: string) {
   return pendingSignup.email === email.toLowerCase() ? pendingSignup : null;
 }
 
-async function activateBetaTrial({
-  accessToken,
-  userId,
-}: {
-  accessToken?: string;
-  userId: string;
-}) {
-  const headers = await getAuthorizedJsonHeaders(accessToken);
-  const response = await fetch('/api/activate-beta-trial', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ userId }),
-  });
-
-  const payload = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(payload.error || 'Impossible d’activer ton essai gratuit pour le moment.');
-  }
-
-  return payload;
-}
-
-export default function LandingClient() {
+export default function LandingClient({
+  variant = 'full',
+}: LandingClientProps) {
+  const defaultAuthMode = getDefaultAuthMode(variant);
   const isSupabaseConfigured = Boolean(supabase);
-  const [authMode, setAuthModeState] = useState<AuthMode>('signup');
+  const [authMode, setAuthModeState] = useState<AuthMode>(defaultAuthMode);
   const [statusMessage, setStatusMessage] = useState(
-    '7 jours gratuits sans carte. Accès immédiat à Kloo.',
+    getStatusMessageForMode(defaultAuthMode),
   );
   const [statusVariant, setStatusVariant] = useState<StatusVariant>('info');
   const [toastMessage, setToastMessage] = useState(
@@ -333,6 +381,9 @@ export default function LandingClient() {
 
   const isSignup = authMode === 'signup';
   const isRecovery = authMode === 'recovery';
+  const isFullLanding = variant === 'full';
+  const isLoginOnly = variant === 'login';
+  const isPasswordOnly = variant === 'password';
 
   function showToast(message: string) {
     setToastMessage(message);
@@ -391,15 +442,7 @@ export default function LandingClient() {
   function setAuthMode(mode: AuthMode) {
     setAuthModeState(mode);
     setShowAppActions(false);
-
-    setStatus(
-      mode === 'signup'
-        ? '7 jours gratuits sans carte. Accès immédiat à Kloo.'
-        : mode === 'recovery'
-          ? 'Entre un nouveau mot de passe de 8 caractères minimum.'
-          : 'Connecte-toi pour ouvrir Kloo et reprendre ton budget.',
-      'info',
-    );
+    setStatus(getStatusMessageForMode(mode), 'info');
   }
 
   async function handleForgotPassword(event: MouseEvent<HTMLAnchorElement>) {
@@ -411,7 +454,7 @@ export default function LandingClient() {
       return;
     }
 
-    const redirectTo = getRedirectUrl();
+    const redirectTo = getRecoveryRedirectUrl();
     const { error } = await getSupabaseClient().auth.resetPasswordForEmail(
       normalizedEmail,
       {
@@ -466,7 +509,6 @@ export default function LandingClient() {
       'info',
     );
 
-    const redirectTo = getRedirectUrl();
     let data: any = null;
     let error: Error | null = null;
 
@@ -475,7 +517,7 @@ export default function LandingClient() {
         email: normalizedEmail,
         password,
         options: {
-          emailRedirectTo: redirectTo,
+          emailRedirectTo: getSignupRedirectUrl(),
           data: {
             name: normalizedName,
             profile_type: profileType,
@@ -531,7 +573,7 @@ export default function LandingClient() {
         setAuthModeState('login');
         setShowAppActions(false);
         setStatus(
-          "Compte créé. Vérifie ton email : après confirmation, ton essai gratuit de 7 jours sera activé immédiatement.",
+          'Compte créé. Vérifie ton email : après confirmation, tu pourras lancer ton essai de 7 jours via Stripe.',
           'success',
         );
         showToast('Email de confirmation envoyé');
@@ -539,29 +581,22 @@ export default function LandingClient() {
       }
 
       try {
-        setStatus('Compte créé. Activation de ton accès gratuit...', 'info');
-        await activateBetaTrial({
+        setStatus('Compte créé. On t’ouvre le checkout sécurisé pour démarrer ton essai...', 'info');
+        await launchCheckout({
           accessToken: data.session?.access_token,
           userId: data.user?.id ?? '',
+          email: data.user?.email ?? normalizedEmail,
+          fullName: normalizedName,
+          profileType,
         });
-
-        setAuthModeState('login');
-        setShowAppActions(true);
+      } catch (checkoutError) {
         setStatus(
-          'Ton essai gratuit de 7 jours est activé. On t’ouvre Kloo pour commencer.',
-          'success',
-        );
-        showToast('Essai Kloo activé');
-        clearPendingSignup();
-        redirectToBudgeeApp();
-      } catch (betaError) {
-        setStatus(
-          betaError instanceof Error
-            ? betaError.message
-            : 'Compte créé, mais l’essai gratuit n’a pas pu être activé automatiquement.',
+          checkoutError instanceof Error
+            ? checkoutError.message
+            : 'Compte créé, mais le checkout sécurisé n’a pas pu être lancé automatiquement.',
           'error',
         );
-        showToast('Activation impossible');
+        showToast('Checkout indisponible');
       }
       return;
     }
@@ -571,13 +606,15 @@ export default function LandingClient() {
       setEmail('');
       setPassword('');
       setProfileType('Étudiant');
-      setAuthModeState('login');
       setShowAppActions(false);
-      setStatus(
-        'Mot de passe mis à jour. Tu peux maintenant te connecter avec ton nouveau mot de passe.',
-        'success',
-      );
-      showToast('Mot de passe mis à jour');
+
+      try {
+        await getSupabaseClient().auth.signOut();
+      } catch (signOutError) {
+        console.warn('Déconnexion après changement de mot de passe impossible.', signOutError);
+      }
+
+      window.location.assign('/connexion?password=updated');
       return;
     }
 
@@ -585,6 +622,10 @@ export default function LandingClient() {
       const sessionUserId = data?.session?.user?.id ?? '';
       let currentSubscription = await fetchCurrentSubscription(sessionUserId);
       const hadSubscriptionBefore = currentSubscription !== null;
+      const userMetadata =
+        (data?.session?.user?.user_metadata as
+          | { name?: string; profile_type?: string }
+          | undefined) ?? undefined;
 
       if (!hasSubscriptionAccess(currentSubscription) && sessionUserId) {
         currentSubscription = await syncStripeAccess({
@@ -605,30 +646,20 @@ export default function LandingClient() {
         return;
       }
 
-      // Créer un essai UNIQUEMENT si l'utilisateur n'a JAMAIS eu d'abonnement
       if (!hadSubscriptionBefore && !currentSubscription) {
-
-        setStatus('Connexion réussie. Activation de ton essai gratuit de 7 jours...', 'info');
-        const trialResult = await activateBetaTrial({ userId: sessionUserId });
-
-        
-        if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
-          setShowAppActions(true);
-          setStatus(
-            'Félicitations ! Ton essai gratuit de 7 jours est activé. On t’ouvre Kloo.',
-            'success',
-          );
-          showToast('Essai gratuit activé !');
-          redirectToBudgeeApp();
-          return;
-        }
+        setStatus(
+          'Connexion réussie. On t’ouvre le checkout sécurisé pour démarrer ton essai de 7 jours...',
+          'info',
+        );
+        await launchCheckout({
+          accessToken: data.session?.access_token,
+          userId: sessionUserId,
+          email: data?.session?.user?.email ?? normalizedEmail,
+          fullName: userMetadata?.name ?? '',
+          profileType: userMetadata?.profile_type ?? '',
+        });
+        return;
       }
-
-      const userMetadata =
-        (data?.session?.user?.user_metadata as
-          | { name?: string; profile_type?: string }
-          | undefined) ?? undefined;
-
 
       setStatus(
         'Ton essai est terminé. On te redirige vers le paiement sécurisé pour continuer.',
@@ -664,8 +695,29 @@ export default function LandingClient() {
     async function init() {
       const authParams = getAuthParams();
       const searchParams = new URLSearchParams(window.location.search);
+      const authRedirectPath = getAuthRedirectPath(authParams);
       const checkoutSessionId = searchParams.get('session_id');
+
+      if (
+        isFullLanding &&
+        authRedirectPath &&
+        searchParams.get('checkout') !== 'success' &&
+        searchParams.get('checkout') !== 'cancel'
+      ) {
+        window.location.replace(getCurrentUrlWithAuthParams(authRedirectPath));
+        return;
+      }
+
       const { data: sessionData } = await getSupabaseClient().auth.getSession();
+
+      if (searchParams.get('password') === 'updated') {
+        setAuthModeState('login');
+        setShowAppActions(false);
+        setStatus(
+          'Mot de passe mis à jour. Tu peux maintenant te connecter avec ton nouveau mot de passe.',
+          'success',
+        );
+      }
 
       if (searchParams.get('checkout') === 'success') {
         let checkoutConfirmed = false;
@@ -720,10 +772,7 @@ export default function LandingClient() {
           'Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Kloo.',
           'error',
         );
-      } else if (
-        authParams.hashType === 'recovery' ||
-        authParams.searchType === 'recovery'
-      ) {
+      } else if (isRecoveryAuthParams(authParams)) {
         setAuthModeState('recovery');
         setStatus(
           'Choisis ton nouveau mot de passe pour récupérer ton compte Kloo.',
@@ -749,15 +798,12 @@ export default function LandingClient() {
           }
 
           // On vérifie si on vient d'une confirmation d'email (via URL ou localStorage)
-          const pendingSignup = getPendingSignupForEmail(
+          const pendingSignupData = getPendingSignupForEmail(
             sessionData.session.user.email ?? '',
           );
           const isConfirmingEmail =
-            authParams.hasAccessToken ||
-            authParams.hasCode ||
-            authParams.hashType === 'signup' ||
-            authParams.searchType === 'signup' ||
-            Boolean(pendingSignup);
+            hasLoginAuthParams(authParams) ||
+            Boolean(pendingSignupData);
 
           if (hasSubscriptionAccess(currentSubscription)) {
             clearPendingSignup();
@@ -774,32 +820,22 @@ export default function LandingClient() {
           } else {
             if (isConfirmingEmail && !currentSubscription) {
               setStatus(
-                'Email confirmé. Activation de ton essai gratuit de 7 jours...',
+                'Email confirmé. On t’ouvre le checkout sécurisé pour démarrer ton essai de 7 jours...',
                 'info',
               );
-              const trialResult = await activateBetaTrial({
+              const userMetadata =
+                (sessionData.session.user.user_metadata as
+                  | { name?: string; profile_type?: string }
+                  | undefined) ?? undefined;
+              await launchCheckout({
                 accessToken: sessionData.session.access_token,
                 userId: sessionData.session.user.id,
+                email: sessionData.session.user.email ?? '',
+                fullName: userMetadata?.name ?? pendingSignupData?.fullName ?? '',
+                profileType:
+                  userMetadata?.profile_type ?? pendingSignupData?.profileType ?? '',
               });
-
-              if (trialResult.ok && new Date(trialResult.trialEndsAt).getTime() > Date.now()) {
-                setShowAppActions(true);
-                setStatus(
-                  'Félicitations ! Ton essai gratuit est actif. On t’ouvre Kloo pour commencer.',
-                  'success',
-                );
-                showToast('Essai gratuit activé !');
-                clearPendingSignup();
-                redirectToBudgeeApp();
-              } else {
-                // Si l'activation a échoué (déjà eu un essai), on redirige vers le paiement
-                setStatus(
-                  'Email confirmé. Ton essai est terminé, abonne-toi pour continuer.',
-                  'info',
-                );
-                setShowAppActions(false);
-                showToast('Essai déjà utilisé');
-              }
+              return;
             } else {
               setShowAppActions(false);
               setStatus(
@@ -817,13 +853,7 @@ export default function LandingClient() {
           );
         }
       } else {
-        const hasAuthParams =
-          authParams.hasAccessToken ||
-          authParams.hasCode ||
-          authParams.hashType === 'signup' ||
-          authParams.searchType === 'signup';
-
-        if (hasAuthParams) {
+        if (hasLoginAuthParams(authParams)) {
           setAuthModeState('login');
           setShowAppActions(false);
           setStatus(
@@ -889,6 +919,297 @@ export default function LandingClient() {
         ? 'Mettre à jour mon mot de passe'
         : 'Je me connecte';
   const showForgotPassword = authMode === 'login';
+  const authPageTitle = isPasswordOnly
+    ? 'Choisis un nouveau mot de passe'
+    : 'Connecte-toi à Kloo';
+  const authPageCopy = isPasswordOnly
+    ? 'Tu es sur la page dédiée à la mise à jour du mot de passe. Après validation, on te renvoie vers la connexion.'
+    : 'Cette page sert uniquement à la connexion. Une fois validée, Kloo t’ouvre directement la vraie app.';
+  const authCard = (
+    <section className="card" id="inscription">
+      {isFullLanding ? (
+        <div className="signup-tabs">
+          <button
+            type="button"
+            className={`tab-btn${isSignup ? ' active' : ''}`}
+            onClick={() => setAuthMode('signup')}
+          >
+            S&apos;inscrire
+          </button>
+          <button
+            type="button"
+            className={`tab-btn${!isSignup ? ' active' : ''}`}
+            onClick={() => setAuthMode('login')}
+          >
+            Se connecter
+          </button>
+        </div>
+      ) : (
+        <div className="section-kicker">
+          {isPasswordOnly ? 'Mot de passe' : 'Connexion'}
+        </div>
+      )}
+      {isFullLanding && <div className="trial-badge">⏱ 7 jours gratuits pour tester</div>}
+      <h3 className="signup-form-h">{authTitle}</h3>
+      <p className="signup-form-sub">{authCopy}</p>
+      <div className="form-divider" />
+      <form className="form-body" id="signup-form" onSubmit={handleSubmit}>
+        <div className="step-block">
+          <div className="step-title">
+            <div className="step-num">1</div>
+            <div className="step-title-text">
+              <strong>Ton compte</strong>
+              <p>On commence par les bases.</p>
+            </div>
+          </div>
+          <div className="field-group">
+            <div id="name-wrap" className={!isSignup ? 'hidden-field' : ''}>
+              <label className="field-label" htmlFor="f-name">
+                Prénom et nom
+              </label>
+              <input
+                className="field"
+                id="f-name"
+                type="text"
+                placeholder="Ex : Emma Martin"
+                autoComplete="name"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                required={isSignup}
+              />
+            </div>
+            <div className={isRecovery ? 'hidden-field' : ''}>
+              <label className="field-label" htmlFor="f-email">
+                Email
+              </label>
+              <input
+                className="field"
+                id="f-email"
+                type="email"
+                placeholder="emma@univ.fr"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required={!isRecovery}
+              />
+            </div>
+            <div style={{ position: 'relative' }}>
+              <label className="field-label" htmlFor="f-pwd">
+                Mot de passe
+              </label>
+              <input
+                className="field"
+                id="f-pwd"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="8 caractères minimum"
+                style={{ paddingRight: '45px' }}
+                autoComplete={
+                  isSignup || isRecovery ? 'new-password' : 'current-password'
+                }
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={8}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  bottom: '12px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.5,
+                }}
+                aria-label={showPassword ? 'Masquer' : 'Afficher'}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+            <div id="profile-wrap" className={!isSignup ? 'hidden-field' : ''}>
+              <label className="field-label">Ton profil</label>
+              <div className="profile-btns">
+                {['Étudiant', 'Alternant', 'Jeune actif'].map((profile) => (
+                  <button
+                    key={profile}
+                    type="button"
+                    className={`profile-btn${
+                      profileType === profile ? ' active' : ''
+                    }`}
+                    onClick={() => setProfileType(profile)}
+                  >
+                    {profile}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {isSignup && (
+          <div className="step-block">
+            <div className="step-title">
+              <div className="step-num">2</div>
+              <div className="step-title-text">
+                <strong>Ton essai gratuit</strong>
+                <p>
+                  Ton essai gratuit démarre après validation du checkout Stripe sécurisé.
+                </p>
+              </div>
+            </div>
+            <div className="stripe-block">
+              <div className="stripe-header">
+                <span className="stripe-title">Paiement mensuel (Stripe)</span>
+                <span className="stripe-logos" aria-label="Visa et Mastercard">
+                  <span className="card-logo visa-logo" aria-hidden="true">
+                    <span className="visa-logo-text">VISA</span>
+                  </span>
+                  <span className="card-logo mastercard-logo" aria-hidden="true">
+                    <span className="mastercard-circle mastercard-left" />
+                    <span className="mastercard-circle mastercard-right" />
+                  </span>
+                </span>
+              </div>
+              <p>
+                Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée Stripe.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="submit-btn"
+          disabled={isSubmitting}
+          style={{ opacity: isSubmitting ? 0.7 : 1 }}
+        >
+          {submitLabel}
+        </button>
+      </form>
+
+      <p className="secure-line">
+        <span className="secure-line-top">
+          <span>🔒 Paiement sécurisé par Stripe</span>
+          <span className="stripe-logos" aria-label="Visa et Mastercard">
+            <span className="card-logo visa-logo" aria-hidden="true">
+              <span className="visa-logo-text">VISA</span>
+            </span>
+            <span className="card-logo mastercard-logo" aria-hidden="true">
+              <span className="mastercard-circle mastercard-left" />
+              <span className="mastercard-circle mastercard-right" />
+            </span>
+          </span>
+        </span>
+        <br />
+        Aucun prélèvement pendant 7 jours. Résiliation en 1 clic.
+      </p>
+
+      {showForgotPassword && !isRecovery && (
+        <a
+          href="#"
+          className="minor-link"
+          onClick={handleForgotPassword}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '10px',
+            color: 'var(--blue)',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+          }}
+        >
+          Modifier / réinitialiser mon mot de passe
+        </a>
+      )}
+
+      {isLoginOnly && (
+        <a
+          href="/"
+          className="minor-link"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '10px',
+            color: 'var(--muted)',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+          }}
+        >
+          Je n&apos;ai pas encore de compte
+        </a>
+      )}
+
+      {isPasswordOnly && (
+        <a
+          href="/connexion"
+          className="minor-link"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '10px',
+            color: 'var(--muted)',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+          }}
+        >
+          Retour à la connexion
+        </a>
+      )}
+
+      <div
+        className="status-box"
+        style={{
+          background:
+            statusVariant === 'error'
+              ? '#fde8e3'
+              : statusVariant === 'success'
+                ? '#e4f5ee'
+                : 'var(--blue-soft)',
+          color:
+            statusVariant === 'error'
+              ? '#7a3020'
+              : statusVariant === 'success'
+                ? '#1e7a52'
+                : 'var(--blue)',
+        }}
+      >
+        {statusMessage}
+      </div>
+
+      {showAppActions && (
+        <div className="action-row">
+          <button type="button" className="action-btn" onClick={openBudgeeApp}>
+            Ouvrir Kloo
+          </button>
+          <a
+            href={isFullLanding ? '#guide-app' : '/#guide-app'}
+            className="action-btn action-btn-secondary"
+            onClick={(event) => {
+              if (!isFullLanding) {
+                return;
+              }
+
+              event.preventDefault();
+              scrollToInstallSection();
+            }}
+          >
+            Guide d’installation
+          </a>
+        </div>
+      )}
+    </section>
+  );
 
   if (!isSupabaseConfigured) {
     return (
@@ -906,6 +1227,50 @@ export default function LandingClient() {
             </p>
           </section>
         </div>
+      </>
+    );
+  }
+
+  if (!isFullLanding) {
+    return (
+      <>
+        <div className="bg-glow" />
+        <div className="page auth-page">
+          <nav className="nav fade-up">
+            <a href="/" className="brand">
+              kloo
+            </a>
+            <div className="nav-actions">
+              <a
+                href={isPasswordOnly ? '/connexion' : '/'}
+                className="nav-app-link"
+              >
+                {isPasswordOnly ? 'Retour à la connexion' : 'Créer mon compte'}
+              </a>
+            </div>
+          </nav>
+
+          <section className="auth-shell">
+            <article className="card auth-copy-card fade-up">
+              <div className="section-kicker">
+                {isPasswordOnly ? 'Lien sécurisé' : 'Accès rapide'}
+              </div>
+              <h1 className="section-h">{authPageTitle}</h1>
+              <p className="section-sub">{authPageCopy}</p>
+              <p className="auth-copy-note">
+                {isPasswordOnly
+                  ? 'Tu n’as plus besoin de repasser par toute la page de présentation pour mettre à jour ton accès.'
+                  : 'Tu n’as plus besoin de repasser par toute la landing page pour entrer dans ton compte.'}
+              </p>
+            </article>
+
+            <div className="fade-up" style={{ animationDelay: '0.08s' }}>
+              {authCard}
+            </div>
+          </section>
+        </div>
+
+        <div className={`toast${toastVisible ? ' show' : ''}`}>{toastMessage}</div>
       </>
     );
   }
@@ -977,7 +1342,7 @@ export default function LandingClient() {
               </a>
               <div className="reassurance-line">
                 <span>7 jours pour tester</span>
-                <span>Sans carte au départ</span>
+                <span>Checkout Stripe sécurisé</span>
                 <span>Paiement seulement si tu continues</span>
               </div>
             </div>
@@ -1287,241 +1652,7 @@ export default function LandingClient() {
           </div>
         </section>
 
-        <section className="card" id="inscription">
-          <div className="signup-tabs">
-            <button
-              type="button"
-              className={`tab-btn${isSignup ? ' active' : ''}`}
-              onClick={() => setAuthMode('signup')}
-            >
-              S&apos;inscrire
-            </button>
-            <button
-              type="button"
-              className={`tab-btn${!isSignup ? ' active' : ''}`}
-              onClick={() => setAuthMode('login')}
-            >
-              Se connecter
-            </button>
-          </div>
-          <div className="trial-badge">⏱ 7 jours gratuits pour tester</div>
-          <h3 className="signup-form-h">{authTitle}</h3>
-          <p className="signup-form-sub">{authCopy}</p>
-          <div className="form-divider" />
-          <form className="form-body" id="signup-form" onSubmit={handleSubmit}>
-            <div className="step-block">
-              <div className="step-title">
-                <div className="step-num">1</div>
-                <div className="step-title-text">
-                  <strong>Ton compte</strong>
-                  <p>On commence par les bases.</p>
-                </div>
-              </div>
-              <div className="field-group">
-                <div id="name-wrap" className={!isSignup ? 'hidden-field' : ''}>
-                  <label className="field-label" htmlFor="f-name">
-                    Prénom et nom
-                  </label>
-                  <input
-                    className="field"
-                    id="f-name"
-                    type="text"
-                    placeholder="Ex : Emma Martin"
-                    autoComplete="name"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required={isSignup}
-                  />
-                </div>
-                <div className={isRecovery ? 'hidden-field' : ''}>
-                  <label className="field-label" htmlFor="f-email">
-                    Email
-                  </label>
-                  <input
-                    className="field"
-                    id="f-email"
-                    type="email"
-                    placeholder="emma@univ.fr"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    required={!isRecovery}
-                  />
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <label className="field-label" htmlFor="f-pwd">
-                    Mot de passe
-                  </label>
-                  <input
-                    className="field"
-                    id="f-pwd"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="8 caractères minimum"
-                    style={{ paddingRight: '45px' }}
-                    autoComplete={
-                      isSignup || isRecovery ? 'new-password' : 'current-password'
-                    }
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    minLength={8}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '12px',
-                      bottom: '12px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0.5,
-                    }}
-                    aria-label={showPassword ? 'Masquer' : 'Afficher'}
-                  >
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
-                </div>
-                <div id="profile-wrap" className={!isSignup ? 'hidden-field' : ''}>
-                  <label className="field-label">Ton profil</label>
-                  <div className="profile-btns">
-                    {['Étudiant', 'Alternant', 'Jeune actif'].map((profile) => (
-                      <button
-                        key={profile}
-                        type="button"
-                        className={`profile-btn${
-                          profileType === profile ? ' active' : ''
-                        }`}
-                        onClick={() => setProfileType(profile)}
-                      >
-                        {profile}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {isSignup && (
-              <div className="step-block">
-                <div className="step-title">
-                  <div className="step-num">2</div>
-                  <div className="step-title-text">
-                    <strong>Ton essai gratuit</strong>
-                    <p>
-                      Aucun code à entrer. Ton essai gratuit démarre directement après activation.
-                    </p>
-                  </div>
-                </div>
-                <div className="stripe-block">
-                  <div className="stripe-header">
-                    <span className="stripe-title">Paiement mensuel (Stripe)</span>
-                    <span className="stripe-logos" aria-label="Visa et Mastercard">
-                      <span className="card-logo visa-logo" aria-hidden="true">
-                        <span className="visa-logo-text">VISA</span>
-                      </span>
-                      <span className="card-logo mastercard-logo" aria-hidden="true">
-                        <span className="mastercard-circle mastercard-left" />
-                        <span className="mastercard-circle mastercard-right" />
-                      </span>
-                    </span>
-                  </div>
-                  <p>
-                    Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée Stripe.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="submit-btn"
-              disabled={isSubmitting}
-              style={{ opacity: isSubmitting ? 0.7 : 1 }}
-            >
-              {submitLabel}
-            </button>
-          </form>
-
-          <p className="secure-line">
-            <span className="secure-line-top">
-              <span>🔒 Paiement sécurisé par Stripe</span>
-              <span className="stripe-logos" aria-label="Visa et Mastercard">
-                <span className="card-logo visa-logo" aria-hidden="true">
-                  <span className="visa-logo-text">VISA</span>
-                </span>
-                <span className="card-logo mastercard-logo" aria-hidden="true">
-                  <span className="mastercard-circle mastercard-left" />
-                  <span className="mastercard-circle mastercard-right" />
-                </span>
-              </span>
-            </span>
-            <br />
-            Aucun prélèvement pendant 7 jours. Résiliation en 1 clic.
-          </p>
-
-          {showForgotPassword && !isRecovery && (
-            <a
-              href="#"
-              className="minor-link"
-              onClick={handleForgotPassword}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                marginTop: '10px',
-                color: 'var(--blue)',
-                textDecoration: 'none',
-                fontSize: '0.9rem',
-                fontWeight: 700,
-              }}
-            >
-              Modifier / réinitialiser mon mot de passe
-            </a>
-          )}
-
-          <div
-            className="status-box"
-            style={{
-              background:
-                statusVariant === 'error'
-                  ? '#fde8e3'
-                  : statusVariant === 'success'
-                    ? '#e4f5ee'
-                    : 'var(--blue-soft)',
-              color:
-                statusVariant === 'error'
-                  ? '#7a3020'
-                  : statusVariant === 'success'
-                    ? '#1e7a52'
-                    : 'var(--blue)',
-            }}
-          >
-            {statusMessage}
-          </div>
-
-          {showAppActions && (
-            <div className="action-row">
-              <button type="button" className="action-btn" onClick={openBudgeeApp}>
-                Ouvrir Kloo
-              </button>
-              <a
-                href="#guide-app"
-                className="action-btn action-btn-secondary"
-                onClick={(event) => {
-                  event.preventDefault();
-                  scrollToInstallSection();
-                }}
-              >
-                Guide d’installation
-              </a>
-            </div>
-          )}
-        </section>
+        {authCard}
 
         <footer className="card footer">
           <div className="footer-left">

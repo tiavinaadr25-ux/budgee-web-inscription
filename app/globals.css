@@ -566,6 +566,29 @@ body {
   box-shadow: none;
 }
 
+.auth-page {
+  padding-top: 22px;
+  padding-bottom: 48px;
+}
+
+.auth-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.auth-copy-card {
+  position: sticky;
+  top: 20px;
+}
+
+.auth-copy-note {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding: 16px 22px; margin-bottom: 0; }
 .footer-left h3 { font-size: 0.96rem; letter-spacing: -0.03em; font-weight: 700; margin-bottom: 2px; }
 .footer-left p { color: var(--muted); font-size: 0.82rem; }
@@ -585,6 +608,8 @@ body {
   .problem-grid, .pricing-grid { grid-template-columns: 1fr; }
   .features-grid, .install-grid { grid-template-columns: repeat(2, 1fr); }
   .sales-trio { grid-template-columns: 1fr; }
+  .auth-shell { grid-template-columns: 1fr; }
+  .auth-copy-card { position: static; }
   .hero-copy { padding: 32px 28px 28px; }
   .hero-phone-card { padding: 32px 20px; min-height: 440px; }
   .phone-wrap { max-width: 340px; }
