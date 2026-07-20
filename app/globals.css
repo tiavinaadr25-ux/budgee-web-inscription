@@ -599,7 +599,14 @@ body {
 .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(16px); background: rgba(22, 28, 39, 0.94); color: #fff; padding: 11px 18px; border-radius: 999px; font-size: 0.88rem; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity 0.22s, transform 0.22s; z-index: 100; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-.fade-up { opacity: 0; transform: translateY(16px); animation: fadeUp 0.65s ease forwards; animation-play-state: paused; }
+.fade-up { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up {
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.65s ease forwards;
+  }
+}
 @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
 .hidden-field { display: none !important; }

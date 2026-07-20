@@ -247,6 +247,11 @@ async function syncBillingRecord(invoice, fallbackUserId = null) {
 
 export const handler = async (event) => {
   if (!stripe || !stripeWebhookSecret || !admin) {
+    console.error('[stripe-webhook] Missing configuration', {
+      hasStripe: Boolean(stripe),
+      hasWebhookSecret: Boolean(stripeWebhookSecret),
+      hasAdmin: Boolean(admin),
+    });
     return response(500, { error: 'Webhook Stripe non configuré.' });
   }
 
@@ -256,83 +261,107 @@ export const handler = async (event) => {
       ? Buffer.from(event.body ?? '', 'base64').toString('utf8')
       : event.body ?? '';
 
-    const stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, stripeWebhookSecret);
+    if (!signature) {
+      return response(400, { error: 'Signature Stripe manquante.' });
+    }
 
-    switch (stripeEvent.type) {
-      case 'checkout.session.completed': {
-        const session = stripeEvent.data.object;
-        if (session.mode !== 'subscription') {
+    let stripeEvent;
+
+    try {
+      stripeEvent = stripe.webhooks.constructEvent(rawBody, signature, stripeWebhookSecret);
+    } catch (error) {
+      console.error('[stripe-webhook] Signature verification failed', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return response(400, { error: 'Signature Stripe invalide.' });
+    }
+
+    try {
+      switch (stripeEvent.type) {
+        case 'checkout.session.completed': {
+          const session = stripeEvent.data.object;
+          if (session.mode !== 'subscription') {
+            break;
+          }
+
+          const userId = await getUserIdFromStripeReferences({
+            userId: session.metadata?.user_id ?? session.client_reference_id ?? null,
+            customerId: typeof session.customer === 'string' ? session.customer : null,
+            subscriptionId:
+              typeof session.subscription === 'string' ? session.subscription : null,
+            email: session.customer_details?.email ?? session.customer_email ?? null,
+          });
+
+          if (userId && typeof session.subscription === 'string') {
+            await syncSubscriptionRecord({
+              userId,
+              subscriptionId: session.subscription,
+              customerId: typeof session.customer === 'string' ? session.customer : null,
+            });
+          }
           break;
         }
 
-        const userId = await getUserIdFromStripeReferences({
-          userId: session.metadata?.user_id ?? session.client_reference_id ?? null,
-          customerId: typeof session.customer === 'string' ? session.customer : null,
-          subscriptionId:
-            typeof session.subscription === 'string' ? session.subscription : null,
-          email: session.customer_details?.email ?? session.customer_email ?? null,
-        });
-
-        if (userId && typeof session.subscription === 'string') {
-          await syncSubscriptionRecord({
-            userId,
-            subscriptionId: session.subscription,
-            customerId: typeof session.customer === 'string' ? session.customer : null,
-          });
-        }
-        break;
-      }
-
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const subscription = stripeEvent.data.object;
-        const userId = await getUserIdFromStripeReferences({
-          userId: subscription.metadata?.user_id ?? null,
-          customerId: typeof subscription.customer === 'string' ? subscription.customer : null,
-          subscriptionId: subscription.id,
-          email: null,
-        });
-
-        if (userId) {
-          await syncSubscriptionRecord({
-            userId,
-            subscriptionId: subscription.id,
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted': {
+          const subscription = stripeEvent.data.object;
+          const userId = await getUserIdFromStripeReferences({
+            userId: subscription.metadata?.user_id ?? null,
             customerId: typeof subscription.customer === 'string' ? subscription.customer : null,
+            subscriptionId: subscription.id,
+            email: null,
           });
+
+          if (userId) {
+            await syncSubscriptionRecord({
+              userId,
+              subscriptionId: subscription.id,
+              customerId: typeof subscription.customer === 'string'
+                ? subscription.customer
+                : null,
+            });
+          }
+          break;
         }
-        break;
-      }
 
-      case 'invoice.paid':
-      case 'invoice.payment_failed': {
-        const invoice = stripeEvent.data.object;
-        const userId = await getUserIdFromStripeReferences({
-          userId: null,
-          customerId: typeof invoice.customer === 'string' ? invoice.customer : null,
-          subscriptionId:
-            typeof invoice.subscription === 'string' ? invoice.subscription : null,
-          email: invoice.customer_email ?? invoice.customer_details?.email ?? null,
-        });
-
-        if (
-          userId &&
-          typeof invoice.subscription === 'string' &&
-          stripeEvent.type === 'invoice.paid'
-        ) {
-          await syncSubscriptionRecord({
-            userId,
-            subscriptionId: invoice.subscription,
+        case 'invoice.paid':
+        case 'invoice.payment_failed': {
+          const invoice = stripeEvent.data.object;
+          const userId = await getUserIdFromStripeReferences({
+            userId: null,
             customerId: typeof invoice.customer === 'string' ? invoice.customer : null,
+            subscriptionId:
+              typeof invoice.subscription === 'string' ? invoice.subscription : null,
+            email: invoice.customer_email ?? invoice.customer_details?.email ?? null,
           });
+
+          if (
+            userId &&
+            typeof invoice.subscription === 'string' &&
+            stripeEvent.type === 'invoice.paid'
+          ) {
+            await syncSubscriptionRecord({
+              userId,
+              subscriptionId: invoice.subscription,
+              customerId: typeof invoice.customer === 'string' ? invoice.customer : null,
+            });
+          }
+
+          await syncBillingRecord(invoice, userId);
+          break;
         }
 
-        await syncBillingRecord(invoice, userId);
-        break;
+        default:
+          break;
       }
-
-      default:
-        break;
+    } catch (error) {
+      console.error('[stripe-webhook] Event processing failed', {
+        eventId: stripeEvent.id,
+        eventType: stripeEvent.type,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return response(500, { error: 'Traitement du webhook impossible.' });
     }
 
     return {
@@ -340,8 +369,11 @@ export const handler = async (event) => {
       body: JSON.stringify({ received: true }),
     };
   } catch (error) {
-    return response(400, {
-      error: error instanceof Error ? error.message : 'Webhook Stripe invalide.',
+    console.error('[stripe-webhook] Unexpected failure', {
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return response(500, {
+      error: error instanceof Error ? error.message : 'Webhook Stripe indisponible.',
     });
   }
 };
