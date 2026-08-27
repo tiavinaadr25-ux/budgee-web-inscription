@@ -15,6 +15,29 @@ const supabase =
     ? createClient(supabaseUrl, supabasePublishableKey)
     : null;
 const pendingSignupStorageKey = 'budgee-pending-signup';
+const mobilePaymentOptions = [
+  {
+    id: 'mvola',
+    label: 'MVola',
+    description: 'Mobile money Telma',
+    accentClass: 'mobile-pay-option-mvola',
+    href: process.env.NEXT_PUBLIC_PAPI_MVOLA_URL?.trim() || undefined,
+  },
+  {
+    id: 'orange-money',
+    label: 'Orange Money',
+    description: 'Paiement Orange Madagascar',
+    accentClass: 'mobile-pay-option-orange',
+    href: process.env.NEXT_PUBLIC_PAPI_ORANGE_MONEY_URL?.trim() || undefined,
+  },
+  {
+    id: 'airtel-money',
+    label: 'Airtel Money',
+    description: 'Paiement Airtel Madagascar',
+    accentClass: 'mobile-pay-option-airtel',
+    href: process.env.NEXT_PUBLIC_PAPI_AIRTEL_MONEY_URL?.trim() || undefined,
+  },
+] as const;
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
@@ -287,7 +310,7 @@ function getStatusMessageForMode(mode: AuthMode) {
     return 'Connecte-toi pour ouvrir Kloo et reprendre ton budget.';
   }
 
-  return '7 jours d’essai avec paiement Stripe sécurisé. Résiliation en 1 clic.';
+  return '7 jours d’essai avec paiement sécurisé. Résiliation en 1 clic.';
 }
 
 function isRecoveryAuthParams(authParams: ReturnType<typeof getAuthParams>) {
@@ -573,7 +596,7 @@ export default function LandingClient({
         setAuthModeState('login');
         setShowAppActions(false);
         setStatus(
-          'Compte créé. Vérifie ton email : après confirmation, tu pourras lancer ton essai de 7 jours via Stripe.',
+          'Compte créé. Vérifie ton email : après confirmation, tu pourras lancer ton essai de 7 jours.',
           'success',
         );
         showToast('Email de confirmation envoyé');
@@ -904,6 +927,9 @@ export default function LandingClient({
   const authPageCopy = isPasswordOnly
     ? 'Tu es sur la page dédiée à la mise à jour du mot de passe. Après validation, on te renvoie vers la connexion.'
     : 'Cette page sert uniquement à la connexion. Une fois validée, Kloo t’ouvre directement la vraie app.';
+  const hasConfiguredMobilePayment = mobilePaymentOptions.some((option) =>
+    Boolean(option.href),
+  );
   const authCard = (
     <section className="card" id="inscription">
       {isFullLanding ? (
@@ -1037,13 +1063,13 @@ export default function LandingClient({
               <div className="step-title-text">
                 <strong>Ton essai gratuit</strong>
                 <p>
-                  Ton essai gratuit démarre après validation du checkout Stripe sécurisé.
+                  Ton essai gratuit démarre après validation du paiement sécurisé.
                 </p>
               </div>
             </div>
             <div className="stripe-block">
               <div className="stripe-header">
-                <span className="stripe-title">Paiement mensuel (Stripe)</span>
+                <span className="stripe-title">Paiement mensuel sécurisé</span>
                 <span className="stripe-logos" aria-label="Visa et Mastercard">
                   <span className="card-logo visa-logo" aria-hidden="true">
                     <span className="visa-logo-text">VISA</span>
@@ -1055,7 +1081,71 @@ export default function LandingClient({
                 </span>
               </div>
               <p>
-                Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée Stripe.
+                Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée.
+              </p>
+            </div>
+            <div className="mobile-payments-block">
+              <div className="mobile-payments-head">
+                <div>
+                  <span className="mobile-payments-kicker">Madagascar</span>
+                  <div className="mobile-payments-title">Paiement mobile</div>
+                </div>
+                <span
+                  className={`mobile-payments-badge${
+                    hasConfiguredMobilePayment ? ' is-live' : ''
+                  }`}
+                >
+                  {hasConfiguredMobilePayment ? 'Liens actifs' : 'Prêt à brancher'}
+                </span>
+              </div>
+              <p className="mobile-payments-copy">
+                Ajoute aussi une option locale pour Madagascar avec MVola,
+                Orange Money et Airtel Money. Les boutons sont déjà prêts pour
+                tes liens PAPI.
+              </p>
+              <div className="mobile-payments-grid">
+                {mobilePaymentOptions.map((option) =>
+                  option.href ? (
+                    <a
+                      key={option.id}
+                      href={option.href}
+                      className={`mobile-pay-option ${option.accentClass}`}
+                    >
+                      <span className="mobile-pay-option-label">
+                        {option.label}
+                      </span>
+                      <span className="mobile-pay-option-copy">
+                        {option.description}
+                      </span>
+                      <span className="mobile-pay-option-state">
+                        Payer avec {option.label}
+                      </span>
+                    </a>
+                  ) : (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`mobile-pay-option ${option.accentClass} is-disabled`}
+                      disabled
+                      aria-disabled="true"
+                    >
+                      <span className="mobile-pay-option-label">
+                        {option.label}
+                      </span>
+                      <span className="mobile-pay-option-copy">
+                        {option.description}
+                      </span>
+                      <span className="mobile-pay-option-state">
+                        Lien PAPI à ajouter
+                      </span>
+                    </button>
+                  ),
+                )}
+              </div>
+              <p className="mobile-payments-note">
+                Les cartes internationales et les paiements mobiles peuvent coexister. Quand
+                tu brancheras PAPI, il suffira d’ajouter les liens et de
+                redéployer.
               </p>
             </div>
           </div>
@@ -1073,7 +1163,7 @@ export default function LandingClient({
 
       <p className="secure-line">
         <span className="secure-line-top">
-          <span>🔒 Paiement sécurisé par Stripe</span>
+          <span>🔒 Paiement sécurisé</span>
           <span className="stripe-logos" aria-label="Visa et Mastercard">
             <span className="card-logo visa-logo" aria-hidden="true">
               <span className="visa-logo-text">VISA</span>
@@ -1264,7 +1354,7 @@ export default function LandingClient({
             kloo
           </a>
           <div className="nav-actions">
-            <a href="#inscription" className="nav-app-link" onClick={openLoginSection}>
+            <a href="/connexion" className="nav-app-link">
               Se connecter
             </a>
             <a href="#inscription" className="nav-cta" onClick={openSignupSection}>
@@ -1321,7 +1411,7 @@ export default function LandingClient({
               </a>
               <div className="reassurance-line">
                 <span>7 jours pour tester</span>
-                <span>Checkout Stripe sécurisé</span>
+                <span>Paiement sécurisé</span>
                 <span>Paiement seulement si tu continues</span>
               </div>
             </div>
@@ -1624,7 +1714,7 @@ export default function LandingClient({
               </ul>
               <div className="pricing-disclaimer">
                 Après tes 7 jours gratuits, Kloo te proposera de passer au
-                paiement sécurisé Stripe pour continuer à 1,99 € par mois. Tu peux
+                paiement sécurisé pour continuer à 1,99 € par mois. Tu peux
                 arrêter quand tu veux.
               </div>
             </div>
@@ -1642,9 +1732,10 @@ export default function LandingClient({
             </p>
           </div>
           <div className="footer-links">
+            <a href="/infos-madagascar">Infos Madagascar</a>
             <a href="/cgu">CGU</a>
             <a href="/confidentialite">Politique de confidentialité</a>
-            <a href="mailto:contact@budgee.app">Contact</a>
+            <a href="mailto:contact@kloo.site">Support client</a>
           </div>
         </footer>
       </div>

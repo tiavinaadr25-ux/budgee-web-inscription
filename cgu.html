@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Budgee - CGU</title>
+  <title>Kloo - CGU</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -18,6 +18,7 @@
     main {
       max-width: 760px;
       margin: 0 auto;
+      position: relative;
       padding: 28px;
       border-radius: 28px;
       border: 1px solid rgba(41, 57, 85, 0.14);
@@ -39,14 +40,37 @@
       text-decoration: none;
       font-weight: 700;
     }
+    .close-link {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #18202d;
+      font-size: 1.6rem;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(41, 57, 85, 0.12);
+      box-shadow: 0 10px 24px rgba(36, 46, 66, 0.08);
+    }
+    .intro {
+      margin-right: 56px;
+    }
   </style>
 </head>
 <body>
   <main>
+    <a href="/" class="close-link" aria-label="Fermer" title="Fermer">×</a>
     <h1>Conditions générales d’utilisation</h1>
-    <p>Cette page est une version provisoire des CGU de Budgee. Elle sera remplacée par la version juridique finale avant lancement public.</p>
-    <p>Pour toute question, tu peux nous écrire à <a href="mailto:contact@budgee.app">contact@budgee.app</a>.</p>
-    <p><a href="/">Retour à Budgee</a></p>
+    <p class="intro">Les présentes conditions encadrent l’accès à Kloo, la création de compte, l’essai gratuit, l’abonnement et l’usage du service.</p>
+    <p>Le support client Kloo est joignable à <a href="mailto:contact@kloo.site">contact@kloo.site</a> pour les demandes liées au compte, à l’abonnement, à la résiliation, à la rétractation, aux incidents techniques et aux données personnelles.</p>
+    <p>Le paiement peut être traité par un ou plusieurs prestataires compatibles avec Kloo, y compris des moyens de paiement locaux lorsqu’ils sont activés. Kloo ne stocke jamais directement le numéro complet de carte bancaire.</p>
+    <p>La politique de confidentialité de Kloo décrit séparément les traitements de données personnelles associés au service.</p>
+    <p>Dernière mise à jour : 27 août 2026.</p>
+    <p><a href="mailto:contact@kloo.site">contact@kloo.site</a></p>
   </main>
 </body>
 </html>

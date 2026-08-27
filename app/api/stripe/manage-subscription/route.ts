@@ -86,7 +86,7 @@ async function verifyProfileUser(userId: string, email: string) {
 
 async function findLatestSubscriptionId(userId: string, email: string) {
   if (!stripe || !admin) {
-    throw new Error('Stripe ou Supabase n’est pas configuré.');
+    throw new Error('Le service de paiement ou Supabase n’est pas configuré.');
   }
 
   const { data: storedSubscription, error: storedSubscriptionError } = await admin
@@ -192,7 +192,7 @@ export async function POST(request: NextRequest) {
   if (!stripe || !admin) {
     return jsonResponse(
       request,
-      { error: 'Gestion de l’abonnement Stripe non configurée.' },
+      { error: 'Gestion de l’abonnement non configurée.' },
       { status: 500 },
     );
   }
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
     if (!subscriptionId) {
       return jsonResponse(
         request,
-        { error: 'Aucun abonnement Stripe actif à gérer pour ce compte.' },
+        { error: 'Aucun abonnement actif à gérer pour ce compte.' },
         { status: 404 },
       );
     }

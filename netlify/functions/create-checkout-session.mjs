@@ -122,7 +122,7 @@ async function requireAuthenticatedUser(event) {
 
 async function getOrCreateStripeCustomer({ userId, email, fullName }) {
   if (!stripe) {
-    throw new Error('Stripe n’est pas configuré.');
+    throw new Error('Le paiement n’est pas configuré.');
   }
 
   if (admin) {
@@ -166,7 +166,7 @@ export const handler = async (event) => {
 
   if (!stripe || !stripePriceId) {
     return json(500, {
-      error: 'Stripe checkout n’est pas encore configuré sur ce site.',
+      error: 'Le paiement n’est pas encore configuré sur ce site.',
     }, event);
   }
 

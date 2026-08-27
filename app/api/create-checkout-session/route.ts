@@ -53,7 +53,7 @@ async function getOrCreateStripeCustomer({
   fullName: string;
 }) {
   if (!stripe) {
-    throw new Error('Stripe n’est pas configuré.');
+    throw new Error('Le paiement n’est pas configuré.');
   }
 
   if (admin) {
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     return jsonResponse(
       request,
       {
-        error: 'Stripe checkout n’est pas encore configuré sur ce site.',
+        error: 'Le paiement n’est pas encore configuré sur ce site.',
       },
       { status: 500 },
     );

@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
       hasWebhookSecret: Boolean(stripeWebhookSecret),
       hasAdmin: Boolean(admin),
     });
-    return NextResponse.json({ error: 'Webhook Stripe non configuré.' }, { status: 500 });
+    return NextResponse.json({ error: 'Webhook de paiement non configuré.' }, { status: 500 });
   }
 
   try {
@@ -297,7 +297,7 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.text();
 
     if (!signature) {
-      return NextResponse.json({ error: 'Signature Stripe manquante.' }, { status: 400 });
+      return NextResponse.json({ error: 'Signature de paiement manquante.' }, { status: 400 });
     }
 
     let stripeEvent: Stripe.Event;
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
       console.error('[stripe-webhook] Signature verification failed', {
         message: error instanceof Error ? error.message : String(error),
       });
-      return NextResponse.json({ error: 'Signature Stripe invalide.' }, { status: 400 });
+      return NextResponse.json({ error: 'Signature de paiement invalide.' }, { status: 400 });
     }
 
     try {
@@ -409,11 +409,11 @@ export async function POST(request: NextRequest) {
     console.error('[stripe-webhook] Unexpected failure', {
       message: error instanceof Error ? error.message : String(error),
     });
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : 'Webhook Stripe indisponible.',
-      },
-      { status: 500 },
-    );
+      return NextResponse.json(
+        {
+          error: error instanceof Error ? error.message : 'Webhook de paiement indisponible.',
+        },
+        { status: 500 },
+      );
   }
 }

@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
   if (!stripe || !admin) {
     return jsonResponse(
       request,
-      { error: 'Confirmation Stripe non configurée.' },
+      { error: 'Confirmation du paiement non configurée.' },
       { status: 500 },
     );
   }
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     if (!sessionId) {
       return jsonResponse(
         request,
-        { error: 'Session Stripe manquante.' },
+        { error: 'Session de paiement manquante.' },
         { status: 400 },
       );
     }
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
     if (checkoutSession.mode !== 'subscription') {
       return jsonResponse(
         request,
-        { error: 'Cette session Stripe n’est pas un abonnement.' },
+        { error: 'Cette session de paiement n’est pas un abonnement.' },
         { status: 400 },
       );
     }
@@ -248,7 +248,7 @@ export async function POST(request: NextRequest) {
     if (!userId || typeof checkoutSession.subscription !== 'string') {
       return jsonResponse(
         request,
-        { error: 'Impossible de relier cette session Stripe à un compte Kloo.' },
+        { error: 'Impossible de relier cette session de paiement à un compte Kloo.' },
         { status: 400 },
       );
     }
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : 'Confirmation Stripe indisponible.',
+            : 'Confirmation du paiement indisponible.',
       },
       { status },
     );

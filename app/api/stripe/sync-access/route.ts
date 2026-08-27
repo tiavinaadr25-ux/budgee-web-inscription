@@ -107,7 +107,7 @@ async function upsertPaymentMethod(
 
 async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
   if (!stripe || !admin) {
-    throw new Error('Stripe ou Supabase n’est pas configuré.');
+    throw new Error('Le service de paiement ou Supabase n’est pas configuré.');
   }
 
   const subscription = (await stripe.subscriptions.retrieve(subscriptionId, {
@@ -179,7 +179,7 @@ async function syncBillingRecords(userId: string, customerId: string) {
 
 async function findLatestSubscriptionId(userId: string, email: string) {
   if (!stripe) {
-    throw new Error('Stripe n’est pas configuré.');
+    throw new Error('Le paiement n’est pas configuré.');
   }
 
   const customers = email
@@ -220,7 +220,7 @@ async function findLatestSubscriptionId(userId: string, email: string) {
 
 export async function POST(request: NextRequest) {
   if (!stripe || !admin) {
-    return jsonResponse(request, { error: 'Sync Stripe non configuré.' }, { status: 500 });
+    return jsonResponse(request, { error: 'Synchronisation d’abonnement non configurée.' }, { status: 500 });
   }
 
   try {
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
       request,
       {
         error:
-          error instanceof Error ? error.message : 'Synchronisation Stripe indisponible.',
+          error instanceof Error ? error.message : 'Synchronisation de l’abonnement indisponible.',
       },
       { status },
     );

@@ -252,7 +252,7 @@ export const handler = async (event) => {
       hasWebhookSecret: Boolean(stripeWebhookSecret),
       hasAdmin: Boolean(admin),
     });
-    return response(500, { error: 'Webhook Stripe non configuré.' });
+    return response(500, { error: 'Webhook de paiement non configuré.' });
   }
 
   try {
@@ -262,7 +262,7 @@ export const handler = async (event) => {
       : event.body ?? '';
 
     if (!signature) {
-      return response(400, { error: 'Signature Stripe manquante.' });
+      return response(400, { error: 'Signature de paiement manquante.' });
     }
 
     let stripeEvent;
@@ -273,7 +273,7 @@ export const handler = async (event) => {
       console.error('[stripe-webhook] Signature verification failed', {
         message: error instanceof Error ? error.message : String(error),
       });
-      return response(400, { error: 'Signature Stripe invalide.' });
+      return response(400, { error: 'Signature de paiement invalide.' });
     }
 
     try {
@@ -373,7 +373,7 @@ export const handler = async (event) => {
       message: error instanceof Error ? error.message : String(error),
     });
     return response(500, {
-      error: error instanceof Error ? error.message : 'Webhook Stripe indisponible.',
+      error: error instanceof Error ? error.message : 'Webhook de paiement indisponible.',
     });
   }
 };
