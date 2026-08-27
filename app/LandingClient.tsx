@@ -15,29 +15,6 @@ const supabase =
     ? createClient(supabaseUrl, supabasePublishableKey)
     : null;
 const pendingSignupStorageKey = 'budgee-pending-signup';
-const mobilePaymentOptions = [
-  {
-    id: 'mvola',
-    label: 'MVola',
-    description: 'Mobile money Telma',
-    accentClass: 'mobile-pay-option-mvola',
-    href: process.env.NEXT_PUBLIC_PAPI_MVOLA_URL?.trim() || undefined,
-  },
-  {
-    id: 'orange-money',
-    label: 'Orange Money',
-    description: 'Paiement Orange Madagascar',
-    accentClass: 'mobile-pay-option-orange',
-    href: process.env.NEXT_PUBLIC_PAPI_ORANGE_MONEY_URL?.trim() || undefined,
-  },
-  {
-    id: 'airtel-money',
-    label: 'Airtel Money',
-    description: 'Paiement Airtel Madagascar',
-    accentClass: 'mobile-pay-option-airtel',
-    href: process.env.NEXT_PUBLIC_PAPI_AIRTEL_MONEY_URL?.trim() || undefined,
-  },
-] as const;
 
 type AuthMode = 'signup' | 'login' | 'recovery';
 type StatusVariant = 'info' | 'success' | 'error';
@@ -166,12 +143,14 @@ async function launchCheckout({
   email,
   fullName,
   profileType,
+  returnPath = '/',
 }: {
   accessToken?: string;
   userId: string;
   email: string;
   fullName: string;
   profileType: string;
+  returnPath?: string;
 }) {
   const headers = await getAuthorizedJsonHeaders(accessToken);
   const response = await fetch('/api/create-checkout-session', {
@@ -182,6 +161,7 @@ async function launchCheckout({
       email,
       fullName,
       profileType,
+      returnPath,
     }),
   });
 
@@ -283,6 +263,10 @@ function getSignupRedirectUrl() {
 
 function getRecoveryRedirectUrl() {
   return buildPageUrl('/mot-de-passe');
+}
+
+function getPaymentPageUrl() {
+  return buildPageUrl('/paiement');
 }
 
 function getCurrentUrlWithAuthParams(pathname: string) {
@@ -685,16 +669,11 @@ export default function LandingClient({
       }
 
       setStatus(
-        'Ton essai est terminé. On te redirige vers le paiement sécurisé pour continuer.',
+        'Ton essai est terminé. On t’ouvre la page paiement pour continuer.',
         'info',
       );
-      await launchCheckout({
-        accessToken: data.session?.access_token,
-        userId: sessionUserId,
-        email: data?.session?.user?.email ?? normalizedEmail,
-        fullName: userMetadata?.name ?? '',
-        profileType: userMetadata?.profile_type ?? '',
-      });
+      window.location.assign(getPaymentPageUrl());
+      return;
     } catch (error) {
       setStatus(
         error instanceof Error
@@ -862,9 +841,11 @@ export default function LandingClient({
             } else {
               setShowAppActions(false);
               setStatus(
-                'Tu es connectée. Ton essai est terminé, termine le paiement pour continuer avec Kloo.',
+                'Tu es connectée. Ton essai est terminé, on t’ouvre la page paiement pour continuer avec Kloo.',
                 'info',
               );
+              window.location.replace(getPaymentPageUrl());
+              return;
             }
           }
         } catch (subscriptionError) {
@@ -927,9 +908,6 @@ export default function LandingClient({
   const authPageCopy = isPasswordOnly
     ? 'Tu es sur la page dédiée à la mise à jour du mot de passe. Après validation, on te renvoie vers la connexion.'
     : 'Cette page sert uniquement à la connexion. Une fois validée, Kloo t’ouvre directement la vraie app.';
-  const hasConfiguredMobilePayment = mobilePaymentOptions.some((option) =>
-    Boolean(option.href),
-  );
   const authCard = (
     <section className="card" id="inscription">
       {isFullLanding ? (
@@ -1082,70 +1060,6 @@ export default function LandingClient({
               </div>
               <p>
                 Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée.
-              </p>
-            </div>
-            <div className="mobile-payments-block">
-              <div className="mobile-payments-head">
-                <div>
-                  <span className="mobile-payments-kicker">Madagascar</span>
-                  <div className="mobile-payments-title">Paiement mobile</div>
-                </div>
-                <span
-                  className={`mobile-payments-badge${
-                    hasConfiguredMobilePayment ? ' is-live' : ''
-                  }`}
-                >
-                  {hasConfiguredMobilePayment ? 'Liens actifs' : 'Prêt à brancher'}
-                </span>
-              </div>
-              <p className="mobile-payments-copy">
-                Ajoute aussi une option locale pour Madagascar avec MVola,
-                Orange Money et Airtel Money. Les boutons sont déjà prêts pour
-                tes liens PAPI.
-              </p>
-              <div className="mobile-payments-grid">
-                {mobilePaymentOptions.map((option) =>
-                  option.href ? (
-                    <a
-                      key={option.id}
-                      href={option.href}
-                      className={`mobile-pay-option ${option.accentClass}`}
-                    >
-                      <span className="mobile-pay-option-label">
-                        {option.label}
-                      </span>
-                      <span className="mobile-pay-option-copy">
-                        {option.description}
-                      </span>
-                      <span className="mobile-pay-option-state">
-                        Payer avec {option.label}
-                      </span>
-                    </a>
-                  ) : (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={`mobile-pay-option ${option.accentClass} is-disabled`}
-                      disabled
-                      aria-disabled="true"
-                    >
-                      <span className="mobile-pay-option-label">
-                        {option.label}
-                      </span>
-                      <span className="mobile-pay-option-copy">
-                        {option.description}
-                      </span>
-                      <span className="mobile-pay-option-state">
-                        Lien PAPI à ajouter
-                      </span>
-                    </button>
-                  ),
-                )}
-              </div>
-              <p className="mobile-payments-note">
-                Les cartes internationales et les paiements mobiles peuvent coexister. Quand
-                tu brancheras PAPI, il suffira d’ajouter les liens et de
-                redéployer.
               </p>
             </div>
           </div>

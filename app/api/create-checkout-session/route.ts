@@ -43,6 +43,24 @@ function getSiteUrl(request: NextRequest) {
   throw new ApiRouteError('SITE_URL est manquante sur ce déploiement.', 500);
 }
 
+function normalizeReturnPath(rawPath: string) {
+  if (!rawPath || !rawPath.startsWith('/') || rawPath.startsWith('//')) {
+    return '/';
+  }
+
+  return rawPath;
+}
+
+function buildCheckoutReturnUrl(siteUrl: string, returnPath: string, status: 'success' | 'cancel') {
+  const separator = returnPath.includes('?') ? '&' : '?';
+
+  if (status === 'success') {
+    return `${siteUrl}${returnPath}${separator}checkout=success&session_id={CHECKOUT_SESSION_ID}`;
+  }
+
+  return `${siteUrl}${returnPath}${separator}checkout=cancel`;
+}
+
 async function getOrCreateStripeCustomer({
   userId,
   email,
@@ -108,6 +126,7 @@ export async function POST(request: NextRequest) {
     const userId = String(payload.userId ?? '').trim();
     const fullName = String(payload.fullName ?? '').trim();
     const profileType = String(payload.profileType ?? '').trim();
+    const returnPath = normalizeReturnPath(String(payload.returnPath ?? '').trim());
 
     if (!userId) {
       return jsonResponse(
@@ -178,8 +197,8 @@ export async function POST(request: NextRequest) {
         profile_type: profileType,
         trial_days: String(trialDays),
       },
-      success_url: `${siteUrl}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/?checkout=cancel`,
+      success_url: buildCheckoutReturnUrl(siteUrl, returnPath, 'success'),
+      cancel_url: buildCheckoutReturnUrl(siteUrl, returnPath, 'cancel'),
     });
 
     return jsonResponse(
