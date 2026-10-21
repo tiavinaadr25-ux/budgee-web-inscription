@@ -10,6 +10,7 @@ const patches = [
 for(const base of ['public/_expo/static/js/web','public/app/_expo/static/js/web']){
  const file=path.join(root,base,name);let source=fs.readFileSync(file,'utf8');
  for(const [before,after] of patches){if(source.includes(after))continue;if(source.split(before).length!==2)throw new Error('Expo guide hook changed: '+before);source=source.replace(before,after)}
+ source=source.replace("(0,x.jsx)(b,{Icon:f.FileText,label:\"Rapport mensuel PDF\",onPress:D}),", '');
  fs.writeFileSync(file,source);
 }
 const index=path.join(root,'public/app/index.html');let html=fs.readFileSync(index,'utf8');

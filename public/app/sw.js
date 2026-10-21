@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kloo-pwa-v3-guide-voaray';
+const CACHE_NAME = 'kloo-pwa-v4-no-pdf';
 const getScopePath = () => {
   const scopeUrl = new URL(self.registration.scope);
   return scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : `${scopeUrl.pathname}/`;
