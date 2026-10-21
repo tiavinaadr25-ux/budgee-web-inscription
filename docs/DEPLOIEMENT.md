@@ -47,6 +47,6 @@ Build Next.js et TypeScript, tests de confirmation Stripe, de webhooks Stripe, d
 
 Profil → Mode de paiement ouvre /paiement/gestion. Modifier ma carte utilise Stripe Checkout en mode setup : aucune nouvelle souscription, carte appliquée aux prochains renouvellements via le webhook checkout.session.completed déjà utilisé, avec confirmation de secours au retour. Conserver cet événement dans la configuration du webhook Stripe.
 
-Passer à Mobile Money arrête le renouvellement carte à la fin de la période. Le paiement Voaray reste bloqué tant que l’accès actuel est actif. /paiement/simulation illustre le parcours et ses issues sans appeler une API de paiement. Les écrans du fournisseur et les opérateurs disponibles dépendent du compte marchand.
+Passer à Mobile Money arrête le renouvellement carte à la fin de la période. Le paiement Voaray reste bloqué tant que l’accès actuel est actif. La simulation est retirée. Le bouton Mobile Money ouvre le vrai paiement Voaray lorsque l’accès actuel est terminé. Les écrans du fournisseur et les opérateurs disponibles dépendent du compte marchand.
 
 Le fichier .env préexistant a été retiré du suivi Git. Ses anciennes valeurs restent dans l’historique : renouveler les clés privées concernées puis reporter les nouvelles valeurs dans Netlify et les services qui les utilisent.

@@ -3,6 +3,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const name = 'index-51b57ea0a19a6bf49f360ef6f56c6ba9.js';
 const patches = [
+ ["subscription:pe,onOpenWebsite:en,onLogout:un","subscription:pe,onOpenWebsite:()=>globalThis.location.assign(\"/paiement\"),onLogout:un"],
+ ["visible:Ne,onClose:()=>Fe(!1),onOpenWebsite:en,onSetPrimary:","visible:Ne,onClose:()=>Fe(!1),onOpenWebsite:()=>globalThis.location.assign(\"/paiement/gestion\"),onSetPrimary:"],
  ["_e.exportDataAsCsv=async function(t){const n=r(t.monthKey)","_e.exportDataAsCsv=async function(t){if(typeof document!==\"undefined\"){if(typeof globalThis.KlooExport!==\"function\"){globalThis.alert(\"Actualise Kloo pour activer le téléchargement CSV.\");return}return globalThis.KlooExport(t,(0,a.getActiveCurrency)())}const n=r(t.monthKey)"],
  ["(0,x.jsx)(b,{Icon:f.CircleHelp,label:\"Aide & FAQ\",onPress:L})","(0,x.jsx)(b,{Icon:f.CreditCard,label:\"Mode de paiement\",onPress:()=>globalThis.location.assign(\"/paiement/gestion\")}),(0,x.jsx)(b,{Icon:f.CircleHelp,label:\"Aide & FAQ\",onPress:L})"],
  ["function Z(e){return e?","function Z(e){if(e&&'voaray'===e.provider)return e.currentPeriodEndAt&&new Date(e.currentPeriodEndAt).getTime()>Date.now()?'Accès Mobile Money actif':'Accès Mobile Money terminé';return e?"],

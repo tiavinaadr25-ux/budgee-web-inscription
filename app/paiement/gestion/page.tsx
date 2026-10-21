@@ -28,6 +28,8 @@ export default function PaymentManagement() {
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [available, setAvailable] = useState(false);
+  const accessEnd = summary?.access?.status === 'trialing' ? summary.access.trial_ends_at : summary?.access?.current_period_end_at;
+  const accessActive = Boolean(summary && (summary.access?.status === 'active' || (accessEnd && new Date(accessEnd).getTime() > Date.now()) || (summary.cardEndsAt && new Date(summary.cardEndsAt).getTime() > Date.now())));
   async function refresh() { setSummary(await api()); }
   useEffect(() => { let live = true;
     async function init() {
@@ -53,6 +55,21 @@ export default function PaymentManagement() {
     } catch (e) { setMessage(e instanceof Error ? e.message : 'Réessaie dans un instant.'); }
     finally { setBusy(false); }
   }
+  async function payMobile() {
+    if (busy || !available || accessActive) return;
+    setBusy(true); setMessage('Ouverture du paiement sécurisé Voaray…');
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!url || !key) throw new Error('Connexion indisponible.');
+      const token = (await createClient(url, key).auth.getSession()).data.session?.access_token;
+      if (!token) throw new Error('Reconnecte-toi pour continuer.');
+      const response = await fetch('/api/voaray/checkout', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
+      const result = await response.json();
+      if (!response.ok || !result.url) throw new Error(result.error || 'Le paiement est temporairement indisponible.');
+      window.location.assign(result.url);
+    } catch (e) { setMessage(e instanceof Error ? e.message : 'Le paiement est temporairement indisponible.'); setBusy(false); }
+  }
   return <main className="payment-management" style={{ minHeight: '100vh', background: '#fff', padding: '32px 20px', fontFamily: 'var(--font-dm-sans), sans-serif', color: '#18202d' }}>
     <style>{`.payment-management h1{font-size:clamp(30px,5vw,40px);line-height:1.2}.payment-management h2{font-size:23px;line-height:1.3;margin-bottom:16px}.payment-management h3{font-size:19px;margin-bottom:12px}.payment-management p{margin-bottom:16px}.payment-management button:disabled{opacity:.6;cursor:wait}.payment-management button:focus-visible{outline:3px solid #c97b0a;outline-offset:3px}`}</style>
     <div style={{ maxWidth: 800, margin: '0 auto', lineHeight: 1.65 }}>
@@ -69,16 +86,15 @@ export default function PaymentManagement() {
         <section style={card}><h2>Mobile Money · 9 000 Ar pour un mois</h2>
           <p>Paiement via Voaray, sans renouvellement automatique. Les opérateurs disponibles, dont MVola si activé, sont affichés sur la page Voaray.</p>
           {summary.access?.provider === 'voaray' && summary.access.current_period_end_at && <p>Accès Mobile Money jusqu’au {date(summary.access.current_period_end_at)}.</p>}
-          {!available ? <p>Mobile Money n’est pas encore disponible. Tu peux consulter la simulation ci-dessous.</p> : summary.cardRenews ? <>
+          {!available ? <p>Le paiement Mobile Money est temporairement indisponible. Réessaie plus tard ou contacte le support.</p> : summary.cardRenews ? <>
             <button disabled={busy} style={button} onClick={() => setConfirm(true)}>Passer à Mobile Money</button>
             {confirm && <div style={{ marginTop: 18, padding: 18, background: '#e8f0fb', borderRadius: 12 }}>
               <h3>Arrêter le renouvellement carte ?</h3><p>Tu gardes ton accès jusqu’à son échéance. Tu pourras ensuite payer 9 000 Ar pour un mois par Mobile Money. Aucun paiement n’est effectué maintenant.</p>
               <button disabled={busy} style={button} onClick={() => act('switch-mobile')}>{busy ? 'Mise à jour…' : 'Confirmer le changement'}</button>{' '}
               <button disabled={busy} style={{ ...button, background: '#eef1f6', color: '#18202d' }} onClick={() => setConfirm(false)}>Garder la carte</button>
             </div>}
-          </> : <p>À la fin de ton essai ou de ton accès, choisis Mobile Money sur la page de paiement.</p>}
-          <p style={{ marginTop: 16 }}><a href="/paiement">Ouvrir la page de paiement</a></p>
-          <a href="/paiement/simulation">Voir une simulation sans payer →</a>
+          </> : accessActive ? <p>Ton accès reste actif{accessEnd || summary.cardEndsAt ? ` jusqu’au ${date((accessEnd || summary.cardEndsAt)!)}` : ''}. Reviens à l’échéance pour payer par Mobile Money, sans payer deux fois la période en cours.</p> : <button disabled={busy} style={button} onClick={payMobile}>{busy ? 'Ouverture de Voaray…' : 'Payer 9 000 Ar par Mobile Money'}</button>}
+          <p style={{ marginTop: 16 }}><a href="/paiement">Choisir un paiement à la fin de mon accès</a></p>
         </section>
       </div>}
       <p style={{ marginTop: 24 }}>Besoin d’aide ? <a href="mailto:contact@kloo.site">contact@kloo.site</a> · <a href="/connexion">Se reconnecter</a></p>

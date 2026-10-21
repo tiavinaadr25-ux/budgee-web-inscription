@@ -7,9 +7,17 @@ export const dynamic = 'force-dynamic';
 
 export function GET(request: NextRequest) {
   const config = voarayConfig();
+  const missing = ['VOARAY_API_KEY', 'VOARAY_MERCHANT_KEY', 'VOARAY_API_SECRET', 'SITE_URL', 'VOARAY_PRICE_AMOUNT']
+    .filter(name => !process.env[name]?.trim());
+  const invalid = [
+    ...(!['sandbox', 'production'].includes(config.environment) ? ['VOARAY_ENVIRONMENT'] : []),
+    ...(!Number.isFinite(config.amount) || config.amount < 1 || Math.round(config.amount * 100) !== config.amount * 100 ? ['VOARAY_PRICE_AMOUNT'] : []),
+    ...(!/^[A-Z]{3}$/.test(config.currency) ? ['VOARAY_CURRENCY'] : []),
+    ...(!config.ready && missing.length === 0 && !/^https:\/\/(?!localhost(?=[:/]|$)|127\.0\.0\.1(?=[:/]|$)|\[::1\])[^/]+/i.test(config.siteUrl ?? '') ? ['SITE_URL'] : []),
+  ];
   return jsonResponse(request, { available: config.ready,
     amount: Number.isFinite(config.amount) ? config.amount : null,
-    currency: config.currency, sandbox: config.environment === 'sandbox' },
+    currency: config.currency, sandbox: config.environment === 'sandbox', configuration: { missing, invalid } },
     { headers: { 'Cache-Control': 'no-store' } });
 }
 export function OPTIONS(request: NextRequest) { return optionsResponse(request); }
