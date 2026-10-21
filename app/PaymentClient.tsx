@@ -1,7 +1,7 @@
 'use client';
 
 import { createClient } from '@supabase/supabase-js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey =
@@ -13,37 +13,7 @@ const supabase =
     ? createClient(supabaseUrl, supabasePublishableKey)
     : null;
 
-const mobilePaymentOptions = [
-  {
-    id: 'mvola',
-    label: 'MVola',
-    description: 'Paiement Telma Madagascar',
-    href: process.env.NEXT_PUBLIC_PAPI_MVOLA_URL?.trim() || undefined,
-    borderColor: 'rgba(19, 154, 125, 0.18)',
-    background: 'linear-gradient(180deg, rgba(244, 255, 252, 0.98), rgba(233, 250, 244, 0.98))',
-    accent: '#13886e',
-  },
-  {
-    id: 'orange-money',
-    label: 'Orange Money',
-    description: 'Paiement Orange Madagascar',
-    href: process.env.NEXT_PUBLIC_PAPI_ORANGE_MONEY_URL?.trim() || undefined,
-    borderColor: 'rgba(244, 130, 32, 0.2)',
-    background: 'linear-gradient(180deg, rgba(255, 251, 244, 0.98), rgba(255, 244, 229, 0.98))',
-    accent: '#d97812',
-  },
-  {
-    id: 'airtel-money',
-    label: 'Airtel Money',
-    description: 'Paiement Airtel Madagascar',
-    href: process.env.NEXT_PUBLIC_PAPI_AIRTEL_MONEY_URL?.trim() || undefined,
-    borderColor: 'rgba(220, 54, 74, 0.18)',
-    background: 'linear-gradient(180deg, rgba(255, 246, 247, 0.98), rgba(255, 236, 239, 0.98))',
-    accent: '#c02d42',
-  },
-] as const;
-
-type PageState = 'loading' | 'guest' | 'payment' | 'active';
+type PageState = 'loading' | 'guest' | 'payment' | 'active' | 'confirming';
 
 type SessionUser = {
   id: string;
@@ -386,12 +356,18 @@ export default function PaymentClient() {
   const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const hasConfiguredMobilePayment = useMemo(
-    () => mobilePaymentOptions.some((option) => Boolean(option.href)),
-    [],
-  );
+  const [mobilePayment, setMobilePayment] = useState({ available: false, amount: 9000, currency: 'MGA', sandbox: false });
 
   useEffect(() => {
+    let disposed = false;
+    fetch('/api/voaray/checkout').then((response) => response.json()).then((data) => {
+      if (!disposed) setMobilePayment({ available: data.available === true, amount: data.amount ?? 9000, currency: data.currency ?? 'MGA', sandbox: data.sandbox === true });
+    }).catch(() => {});
+    return () => { disposed = true; };
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
     async function init() {
       if (!supabase) {
         setPageState('guest');
@@ -426,7 +402,39 @@ export default function PaymentClient() {
 
       setCurrentUser(sessionUser);
 
-      if (searchParams.get('checkout') === 'cancel') {
+      if (searchParams.get('voaray') === 'return' && searchParams.get('order')) {
+        setPageState('confirming');
+        setMessage('On attend la confirmation de Voaray. Ton accès sera activé dès que le paiement sera confirmé.');
+        try {
+          for (let attempt = 0; attempt < 12; attempt++) {
+            if (disposed) return;
+            const response = await fetch('/api/voaray/status', { method: 'POST', headers: await getAuthorizedJsonHeaders(), body: JSON.stringify({ orderId: searchParams.get('order') }) });
+            const result = await response.json();
+            if (disposed) return;
+            if (!response.ok) throw new Error(result.error || 'La vérification est temporairement indisponible.');
+            if (result.status === 'completed') {
+              setPageState('active');
+              setMessage('Paiement Voaray confirmé. Ton mois d’accès Kloo est actif.');
+              window.history.replaceState({}, '', '/paiement');
+              return;
+            }
+            if (result.status === 'sandbox_completed') {
+              setPageState('payment'); setMessage('Paiement de test confirmé. Aucun accès réel n’a été activé.'); return;
+            }
+            if (['failed', 'canceled', 'refunded', 'duplicate_payment'].includes(result.status)) {
+              setPageState('payment'); setMessage(result.status === 'duplicate_payment' ? 'Un autre paiement a déjà été reçu pour cette période. Contacte le support pour vérifier ce paiement supplémentaire.' : 'Ce paiement n’a pas activé d’accès. Vérifie son état avant de réessayer, ou contacte le support.'); return;
+            }
+            await new Promise((resolve) => window.setTimeout(resolve, 1500));
+          }
+          if (!disposed) setMessage('La confirmation prend un peu de temps. Vérifie à nouveau dans un instant ; ne repaie pas une seconde fois.');
+        } catch (error) {
+          if (!disposed) setMessage(error instanceof Error ? error.message : 'Vérification indisponible. Réessaie dans un instant.');
+        }
+        return;
+      }
+
+
+      if (searchParams.get('voaray') === 'cancel' || searchParams.get('checkout') === 'cancel') {
         setPageState('payment');
         setMessage('Paiement annulé. Tu peux reprendre quand tu veux depuis cette page.');
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -487,6 +495,7 @@ export default function PaymentClient() {
     }
 
     void init();
+    return () => { disposed = true; };
   }, []);
 
   async function handleCardPayment() {
@@ -508,9 +517,23 @@ export default function PaymentClient() {
     }
   }
 
+  async function handleMobilePayment() {
+    if (!currentUser || isSubmitting || pageState !== 'payment') return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/voaray/checkout', { method: 'POST', headers: await getAuthorizedJsonHeaders() });
+      const payload = await response.json();
+      if (!response.ok || !payload.url) throw new Error(payload.error || 'Le paiement Mobile Money est indisponible.');
+      window.location.assign(payload.url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Voaray est temporairement indisponible.');
+      setIsSubmitting(false);
+    }
+  }
+
   const title =
-    pageState === 'active'
-      ? 'Ton accès est déjà actif'
+    pageState === 'confirming' ? 'Confirmation du paiement' : pageState === 'loading' ? 'Vérification de ton accès' : pageState === 'active'
+      ? 'Ton accès est actif'
       : pageState === 'guest'
         ? 'Connexion requise'
         : 'Choisis ton paiement';
@@ -531,9 +554,11 @@ export default function PaymentClient() {
         <div style={pageStyles.kicker}>Paiement Kloo</div>
         <h1 style={pageStyles.title}>{title}</h1>
         <p style={pageStyles.lead}>{lead}</p>
-        <p style={pageStyles.info}>{message}</p>
+        <p style={pageStyles.info} role="status" aria-live="polite">{message}</p>
 
-        {pageState === 'guest' ? (
+        {pageState === 'loading' ? <p>Vérification en cours…</p> : pageState === 'confirming' ? (
+          <div style={pageStyles.card}><p style={pageStyles.cardText}>Ton paiement est en cours de vérification. Tu pourras ouvrir Kloo dès sa confirmation.</p><button type="button" style={pageStyles.primaryButton} onClick={() => window.location.reload()}>Vérifier à nouveau</button><p style={pageStyles.footer}><a href="mailto:contact@kloo.site">Contacter le support</a></p></div>
+        ) : pageState === 'guest' ? (
           <div style={pageStyles.grid}>
             <div style={pageStyles.card}>
               <h2 style={pageStyles.cardTitle}>Ouvre d’abord ta connexion</h2>
@@ -604,50 +629,15 @@ export default function PaymentClient() {
                 l’essai gratuit, pour les utilisateurs qui préfèrent payer avec
                 MVola, Orange Money ou Airtel Money.
               </p>
-              <div style={pageStyles.mobileGrid}>
-                {mobilePaymentOptions.map((option) =>
-                  option.href ? (
-                    <a
-                      key={option.id}
-                      href={option.href}
-                      style={{
-                        ...pageStyles.mobileButton,
-                        border: `1px solid ${option.borderColor}`,
-                        background: option.background,
-                        color: '#18202d',
-                      }}
-                    >
-                      <span style={pageStyles.mobileLabel}>{option.label}</span>
-                      <span style={pageStyles.mobileCopy}>{option.description}</span>
-                      <span style={{ ...pageStyles.mobileState, color: option.accent }}>
-                        Payer avec {option.label}
-                      </span>
-                    </a>
-                  ) : (
-                    <div
-                      key={option.id}
-                      style={{
-                        ...pageStyles.mobileButton,
-                        border: `1px solid ${option.borderColor}`,
-                        background: option.background,
-                        color: '#18202d',
-                        opacity: 0.76,
-                      }}
-                    >
-                      <span style={pageStyles.mobileLabel}>{option.label}</span>
-                      <span style={pageStyles.mobileCopy}>{option.description}</span>
-                      <span style={{ ...pageStyles.mobileState, color: option.accent }}>
-                        Bientôt disponible
-                      </span>
-                    </div>
-                  ),
-                )}
+              <div style={pageStyles.card}>
+                <h3 style={pageStyles.cardTitle}>Mobile Money avec Voaray</h3>
+                <p style={pageStyles.cardText}><strong>{new Intl.NumberFormat('fr-FR').format(mobilePayment.amount)} {mobilePayment.currency === 'MGA' ? 'Ar' : mobilePayment.currency}</strong> pour un mois d’accès. Paiement ponctuel, sans renouvellement automatique.</p>
+                <p style={pageStyles.cardText}>MVola · Orange Money · Airtel Money. Choisis ton moyen de paiement parmi ceux disponibles sur la page sécurisée Voaray.</p>
+                <button type="button" style={{ ...pageStyles.primaryButton, opacity: mobilePayment.available && !isSubmitting ? 1 : 0.6 }} disabled={!mobilePayment.available || isSubmitting} onClick={handleMobilePayment}>
+                  {isSubmitting ? 'Ouverture du paiement…' : mobilePayment.available ? 'Payer avec Voaray' : 'Mobile Money bientôt disponible'}
+                </button>
+                <p style={pageStyles.footer}>{mobilePayment.sandbox ? 'Mode test : aucun accès réel ne sera activé.' : 'Ton mois d’accès commence après confirmation du paiement par Voaray.'}</p>
               </div>
-              <p style={pageStyles.footer}>
-                {hasConfiguredMobilePayment
-                  ? 'Les moyens de paiement mobiles sont visibles uniquement ici, après l’essai gratuit.'
-                  : 'Les paiements mobiles sont prêts à être branchés ici dès que tes liens PAPI seront ajoutés.'}
-              </p>
             </div>
           </>
         )}

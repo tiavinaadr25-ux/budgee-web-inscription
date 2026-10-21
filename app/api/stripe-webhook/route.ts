@@ -27,8 +27,9 @@ function normalizeSubscriptionStatus(status: string) {
     case 'past_due':
     case 'canceled':
     case 'incomplete':
-    case 'unpaid':
       return status;
+    case 'unpaid':
+      return 'past_due';
     default:
       return 'incomplete';
   }
@@ -39,11 +40,11 @@ function normalizeBillingStatus(status: string) {
     case 'paid':
       return 'paid';
     case 'refunded':
-      return 'refunded';
+      return 'failed';
     case 'failed':
       return 'failed';
     default:
-      return 'upcoming';
+      return 'pending';
   }
 }
 
@@ -182,10 +183,10 @@ async function syncSubscriptionRecord({
           typeof subscription.customer === 'string' ? subscription.customer : customerId,
         provider_subscription_id: subscription.id,
         status: normalizeSubscriptionStatus(subscription.status),
-        price_amount: 3.49,
+        price_amount: (subscription.items.data[0]?.price.unit_amount ?? 199) / 100,
         currency: (subscription.currency ?? 'eur').toUpperCase(),
         trial_ends_at: fromUnix(subscription.trial_end),
-        current_period_end_at: fromUnix(subscription.current_period_end),
+        current_period_end_at: fromUnix(subscription.current_period_end ?? subscription.items.data[0]?.current_period_end),
         cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
       },
       { onConflict: 'provider_subscription_id' },
@@ -202,6 +203,12 @@ async function syncSubscriptionRecord({
   return (result.data?.id as string | undefined) ?? null;
 }
 
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice) {
+  const legacy = invoice as Stripe.Invoice & { subscription?: string | { id?: string } | null };
+  const reference = legacy.subscription ?? invoice.parent?.subscription_details?.subscription;
+  return typeof reference === 'string' ? reference : reference?.id ?? null;
+}
+
 async function syncBillingRecord(invoice: Stripe.Invoice, fallbackUserId: string | null = null) {
   if (!admin) {
     throw new Error('Supabase admin n’est pas configuré.');
@@ -215,10 +222,7 @@ async function syncBillingRecord(invoice: Stripe.Invoice, fallbackUserId: string
     customer?: string | { id?: string | null } | null;
   };
   const invoiceEmail = invoice.customer_email ?? invoiceDetails.customer_details?.email ?? null;
-  const invoiceSubscriptionId =
-    typeof invoiceDetails.subscription === 'string'
-      ? invoiceDetails.subscription
-      : invoiceDetails.subscription?.id ?? null;
+  const invoiceSubscriptionId = getInvoiceSubscriptionId(invoice);
   const invoiceCustomerId =
     typeof invoiceDetails.customer === 'string'
       ? invoiceDetails.customer
@@ -369,21 +373,17 @@ export async function POST(request: NextRequest) {
           const userId = await getUserIdFromStripeReferences({
             userId: null,
             customerId: typeof invoice.customer === 'string' ? invoice.customer : null,
-            subscriptionId:
-              typeof invoiceDetails.subscription === 'string'
-                ? invoiceDetails.subscription
-                : null,
+            subscriptionId: getInvoiceSubscriptionId(invoice),
             email: invoice.customer_email ?? invoiceDetails.customer_details?.email ?? null,
           });
 
           if (
             userId &&
-            typeof invoiceDetails.subscription === 'string' &&
-            stripeEvent.type === 'invoice.paid'
+            getInvoiceSubscriptionId(invoice)
           ) {
             await syncSubscriptionRecord({
               userId,
-              subscriptionId: invoiceDetails.subscription,
+              subscriptionId: getInvoiceSubscriptionId(invoice)!,
               customerId: typeof invoice.customer === 'string' ? invoice.customer : null,
             });
           }

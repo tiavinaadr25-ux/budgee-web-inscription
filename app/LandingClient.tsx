@@ -137,7 +137,7 @@ async function fetchCurrentSubscription(userId: string) {
   return data;
 }
 
-async function launchCheckout({
+async function startFreeTrial({
   accessToken,
   userId,
   email,
@@ -153,7 +153,7 @@ async function launchCheckout({
   returnPath?: string;
 }) {
   const headers = await getAuthorizedJsonHeaders(accessToken);
-  const response = await fetch('/api/create-checkout-session', {
+  const response = await fetch('/api/start-trial', {
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -167,13 +167,15 @@ async function launchCheckout({
 
   const payload = await response.json().catch(() => ({}));
 
-  if (!response.ok || !payload.url) {
+  if (!response.ok || !payload.subscription) {
     throw new Error(
-      payload.error || 'Le paiement sécurisé n’est pas disponible pour le moment.',
+      payload.error || 'Ton essai n’est pas disponible pour le moment.',
     );
   }
 
-  window.location.href = payload.url;
+  const subscription = payload.subscription;
+  clearPendingSignup();
+  window.location.assign(hasSubscriptionAccess(subscription) ? '/app' : '/paiement');
 }
 
 async function confirmCheckoutSession(sessionId: string, accessToken?: string) {
@@ -294,7 +296,7 @@ function getStatusMessageForMode(mode: AuthMode) {
     return 'Connecte-toi pour ouvrir Kloo et reprendre ton budget.';
   }
 
-  return '7 jours d’essai avec paiement sécurisé. Résiliation en 1 clic.';
+  return '7 jours gratuits, sans carte bancaire.';
 }
 
 function isRecoveryAuthParams(authParams: ReturnType<typeof getAuthParams>) {
@@ -384,6 +386,7 @@ export default function LandingClient({
   const [password, setPassword] = useState('');
   const [profileType, setProfileType] = useState('Étudiant');
   const [showPassword, setShowPassword] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isSignup = authMode === 'signup';
@@ -418,7 +421,9 @@ export default function LandingClient({
   }
 
   function scrollToInstallSection() {
-    document.getElementById('guide-app')?.scrollIntoView({
+    const guide = document.getElementById('guide-app');
+    if (guide instanceof HTMLDetailsElement) guide.open = true;
+    guide?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     });
@@ -436,6 +441,7 @@ export default function LandingClient({
 
   function openSignupSection(event?: MouseEvent<HTMLAnchorElement>) {
     event?.preventDefault();
+    setMenuOpen(false);
     setAuthMode('signup');
     scrollToAuthSection();
   }
@@ -588,8 +594,8 @@ export default function LandingClient({
       }
 
       try {
-        setStatus('Compte créé. On t’ouvre le checkout sécurisé pour démarrer ton essai...', 'info');
-        await launchCheckout({
+        setStatus('Compte créé. On démarre tes 7 jours gratuits sans carte...', 'info');
+        await startFreeTrial({
           accessToken: data.session?.access_token,
           userId: data.user?.id ?? '',
           email: data.user?.email ?? normalizedEmail,
@@ -600,10 +606,10 @@ export default function LandingClient({
         setStatus(
           checkoutError instanceof Error
             ? checkoutError.message
-            : 'Compte créé, mais le checkout sécurisé n’a pas pu être lancé automatiquement.',
+            : 'Compte créé, mais ton essai n’a pas pu être activé. Réessaie de te connecter.',
           'error',
         );
-        showToast('Checkout indisponible');
+        showToast('Essai indisponible');
       }
       return;
     }
@@ -655,10 +661,10 @@ export default function LandingClient({
 
       if (!hadSubscriptionBefore && !currentSubscription) {
         setStatus(
-          'Connexion réussie. On t’ouvre le checkout sécurisé pour démarrer ton essai de 7 jours...',
+          'Connexion réussie. On démarre tes 7 jours gratuits sans carte...',
           'info',
         );
-        await launchCheckout({
+        await startFreeTrial({
           accessToken: data.session?.access_token,
           userId: sessionUserId,
           email: data?.session?.user?.email ?? normalizedEmail,
@@ -771,7 +777,7 @@ export default function LandingClient({
         setAuthModeState('login');
         setShowAppActions(false);
         setStatus(
-          'Paiement annulé. Tu peux relancer le checkout quand tu veux pour démarrer ton essai Kloo.',
+          'Paiement annulé. Tu peux reprendre ton abonnement depuis la page paiement.',
           'error',
         );
       } else if (isRecoveryAuthParams(authParams)) {
@@ -820,16 +826,16 @@ export default function LandingClient({
               showToast('Bienvenue sur Kloo !');
             }
           } else {
-            if (isConfirmingEmail && !currentSubscription) {
+            if (!currentSubscription) {
               setStatus(
-                'Email confirmé. On t’ouvre le checkout sécurisé pour démarrer ton essai de 7 jours...',
+                'Email confirmé. On démarre tes 7 jours gratuits sans carte...',
                 'info',
               );
               const userMetadata =
                 (sessionData.session.user.user_metadata as
                   | { name?: string; profile_type?: string }
                   | undefined) ?? undefined;
-              await launchCheckout({
+              await startFreeTrial({
                 accessToken: sessionData.session.access_token,
                 userId: sessionData.session.user.id,
                 email: sessionData.session.user.email ?? '',
@@ -885,7 +891,7 @@ export default function LandingClient({
       : 'Connecte-toi et retrouve ton budget';
 
   const authCopy = isSignup
-    ? 'Crée ton compte puis démarre ton essai gratuit.'
+    ? 'Crée ton compte et confirme ton email. Ton essai démarre sans carte.'
     : isRecovery
       ? 'Ton lien est bien arrivé. Choisis maintenant un nouveau mot de passe pour récupérer ton compte Kloo.'
       : 'Connecte-toi pour retrouver ton budget.';
@@ -897,7 +903,7 @@ export default function LandingClient({
         ? 'Mise à jour...'
         : 'Connexion...'
     : isSignup
-      ? 'Commencer mon essai gratuit'
+      ? 'Créer mon compte'
       : isRecovery
         ? 'Mettre à jour mon mot de passe'
         : 'Je me connecte';
@@ -933,7 +939,7 @@ export default function LandingClient({
         </div>
       )}
       {isFullLanding && <div className="trial-badge">⏱ 7 jours gratuits pour tester</div>}
-      <h3 className="signup-form-h">{authTitle}</h3>
+      <h2 className="signup-form-h">{authTitle}</h2>
       <p className="signup-form-sub">{authCopy}</p>
       <div className="form-divider" />
       <form className="form-body" id="signup-form" onSubmit={handleSubmit}>
@@ -1034,36 +1040,6 @@ export default function LandingClient({
           </div>
         </div>
 
-        {isSignup && (
-          <div className="step-block">
-            <div className="step-title">
-              <div className="step-num">2</div>
-              <div className="step-title-text">
-                <strong>Ton essai gratuit</strong>
-                <p>
-                  Ton essai gratuit démarre après validation du paiement sécurisé.
-                </p>
-              </div>
-            </div>
-            <div className="stripe-block">
-              <div className="stripe-header">
-                <span className="stripe-title">Paiement mensuel sécurisé</span>
-                <span className="stripe-logos" aria-label="Visa et Mastercard">
-                  <span className="card-logo visa-logo" aria-hidden="true">
-                    <span className="visa-logo-text">VISA</span>
-                  </span>
-                  <span className="card-logo mastercard-logo" aria-hidden="true">
-                    <span className="mastercard-circle mastercard-left" />
-                    <span className="mastercard-circle mastercard-right" />
-                  </span>
-                </span>
-              </div>
-              <p>
-                Si tu continues après la période d’essai, le paiement se fera plus tard sur la page sécurisée.
-              </p>
-            </div>
-          </div>
-        )}
 
         <button
           type="submit"
@@ -1075,22 +1051,7 @@ export default function LandingClient({
         </button>
       </form>
 
-      <p className="secure-line">
-        <span className="secure-line-top">
-          <span>🔒 Paiement sécurisé</span>
-          <span className="stripe-logos" aria-label="Visa et Mastercard">
-            <span className="card-logo visa-logo" aria-hidden="true">
-              <span className="visa-logo-text">VISA</span>
-            </span>
-            <span className="card-logo mastercard-logo" aria-hidden="true">
-              <span className="mastercard-circle mastercard-left" />
-              <span className="mastercard-circle mastercard-right" />
-            </span>
-          </span>
-        </span>
-        <br />
-        Aucun prélèvement pendant 7 jours. Résiliation en 1 clic.
-      </p>
+      {isSignup && <p className="secure-line">7 jours gratuits · Sans carte bancaire · Aucun prélèvement</p>}
 
       {showForgotPassword && !isRecovery && (
         <a
@@ -1152,6 +1113,7 @@ export default function LandingClient({
 
       <div
         className="status-box"
+        role="status" aria-live="polite"
         style={{
           background:
             statusVariant === 'error'
@@ -1259,96 +1221,36 @@ export default function LandingClient({
   }
 
   return (
-    <>
-      <div className="bg-glow" />
-
+    <div className="saas-landing">
+      <a href="#contenu" className="skip-link">Aller au contenu</a>
       <div className="page">
-        <nav className="nav fade-up">
-          <a href="#" className="brand">
-            kloo
-          </a>
-          <div className="nav-actions">
-            <a href="/connexion" className="nav-app-link">
-              Se connecter
-            </a>
-            <a href="#inscription" className="nav-cta" onClick={openSignupSection}>
-              Commencer mon essai gratuit
-              <svg
-                viewBox="0 0 14 14"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M1 7h12M8 2l5 5-5 5" />
-              </svg>
-            </a>
-          </div>
-        </nav>
+        <header className="site-header">
+          <a href="/" className="brand" aria-label="Kloo, accueil">kloo<span>.</span></a>
+          <button type="button" className="menu-toggle" aria-expanded={menuOpen} aria-controls="main-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Fermer ✕' : 'Menu ☰'}</button>
+          <nav id="main-menu" className={`site-menu${menuOpen ? ' is-open' : ''}`} aria-label="Navigation principale" onClick={(event) => { if ((event.target as HTMLElement).closest('a')) setMenuOpen(false); }} onKeyDown={(event) => { if (event.key === 'Escape') { setMenuOpen(false); document.querySelector<HTMLButtonElement>('.menu-toggle')?.focus(); } }}>
+            <a href="#fonctionnalites">Fonctionnalités</a>
+            <a href="#tarifs">Tarif</a>
+            <a href="#aide">Aide</a>
 
-        <section className="hero">
-          <article
-            className="card hero-copy fade-up"
-            style={{ animationDelay: '0.08s' }}
-          >
-            <div className="eyebrow">
-              <span className="eyebrow-dot" />
-              7 jours gratuits — Essai sans risque
-            </div>
-            <h1 className="hero-h1">
-              L&apos;app <span className="hl-blue">budget</span> pour étudiants
-              <br />
-              qui veulent arrêter d&apos;être <span className="hl-gold">à sec</span>
-              <br />
-              avant la fin du mois.
-            </h1>
-            <p className="hero-sub">
-              En <strong>moins de 2 minutes par semaine</strong>, tu sais exactement
-              combien tu peux encore dépenser jusqu&apos;au bout du mois.
-            </p>
-            <div className="cta-group">
-              <a href="#inscription" className="btn-primary" onClick={openSignupSection}>
-                Commencer mon essai gratuit — 7 jours offerts
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 14 14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M1 7h12M8 2l5 5-5 5" />
-                </svg>
-              </a>
-              <div className="reassurance-line">
-                <span>7 jours pour tester</span>
-                <span>Paiement sécurisé</span>
-                <span>Paiement seulement si tu continues</span>
+          </nav>
+          <div className="header-account"><a href="/connexion" className="header-login">Connexion</a><a href="#inscription" className="nav-cta" onClick={openSignupSection}>Inscription</a></div>
+        </header>
+        <main id="contenu">
+          <section className="hero" aria-labelledby="hero-title">
+            <article className="hero-copy">
+              <p className="eyebrow"><span className="eyebrow-dot" /> Le budget étudiant, en plus simple</p>
+              <h1 className="hero-h1" id="hero-title">Ton mois.<br />Ton budget.<br /><span className="hl-blue">L’esprit tranquille.</span></h1>
+              <p className="hero-sub">Suis tes dépenses, vois ce qu’il te reste et avance vers tes objectifs. Tout au même endroit.</p>
+              <div className="hero-actions">
+                <a href="#inscription" className="btn-primary" onClick={openSignupSection}>Essayer 7 jours <span aria-hidden="true">↗</span></a>
+                <a href="#fonctionnalites" className="text-link">Découvrir Kloo <span aria-hidden="true">↓</span></a>
               </div>
-            </div>
-            <div className="sales-trio">
-              <div className="sales-item">
-                <strong>Vois où ça part</strong>
-                <p>Loyer, courses, sorties.</p>
-              </div>
-              <div className="sales-item">
-                <strong>Sache ce qu&apos;il reste</strong>
-                <p>Tu sais ce que tu peux encore dépenser.</p>
-              </div>
-              <div className="sales-item">
-                <strong>1,99 € vite rentabilisés</strong>
-                <p>Moins qu&apos;un café par semaine.</p>
-              </div>
-            </div>
-          </article>
-
+              <p className="hero-terms">Puis 1,99 € / mois · Sans engagement<br /><span>Sans carte bancaire. Tu choisis de t’abonner à la fin de l’essai.</span></p>
+            </article>
           <aside
             className="card hero-phone-card fade-up"
             style={{ animationDelay: '0.18s' }}
-            aria-hidden="true"
+            aria-label="Exemple du tableau de bord Kloo"
           >
             <div className="phone-wrap">
               <div className="phone-shell">
@@ -1360,8 +1262,8 @@ export default function LandingClient({
                     </div>
                     <div className="app-greeting">
                       <div className="app-greeting-text">
-                        <h2>Bonjour, Emma</h2>
-                        <p>Lundi 13 janvier 2025</p>
+                        <p className="preview-greeting">Bonjour, Emma</p>
+                        <p>Ton budget du mois</p>
                       </div>
                       <div className="avatar">EM</div>
                     </div>
@@ -1483,178 +1385,41 @@ export default function LandingClient({
               </div>
             </div>
           </aside>
-        </section>
-
-        <section className="card fade-up">
-          <div className="section-kicker">Le problème</div>
-          <h3 className="section-h">Tu te reconnais ?</h3>
-          <p className="section-sub">Le problème, c&apos;est le manque de visibilité.</p>
-          <div className="problem-grid">
-            <div className="pain-list">
-              <div className="pain-bubble">
-                Tu regardes ton compte sans comprendre où ton argent est passé
-              </div>
-              <div className="pain-bubble">
-                Tu dépenses un peu chaque jour… et à la fin du mois tu es à sec
-              </div>
-              <div className="pain-bubble">
-                Tu veux économiser, mais tu ne sais jamais combien tu peux vraiment
-                dépenser
-              </div>
+          </section>
+          <section className="benefits-section" id="fonctionnalites" aria-labelledby="features-title">
+            <div className="section-heading"><p className="overline">Moins de calculs, plus de clarté</p><h2 id="features-title">L’essentiel, en un coup d’œil.</h2></div>
+            <div className="benefit-grid">
+              {[
+                { number: '01', title: 'Vois ce qu’il te reste', copy: 'Un budget clair pour savoir combien tu peux encore dépenser.' },
+                { number: '02', title: 'Comprends tes dépenses', copy: 'Courses, loyer, sorties : repère où part ton argent.' },
+                { number: '03', title: 'Fais avancer tes projets', copy: 'Suis ton épargne et garde tes objectifs en vue.' },
+              ].map((item) => <article className="benefit" key={item.number}><span className="benefit-number">{item.number}</span><h3>{item.title}</h3><p>{item.copy}</p></article>)}
             </div>
-            <div className="gain-box">
-              <h4>Quand tu vois mieux, tu gères mieux.</h4>
-              <div className="gain-list">
-                <div className="gain-bubble">Plus de clarté</div>
-                <div className="gain-bubble">Moins de stress</div>
-                <div className="gain-bubble">De meilleures décisions</div>
-              </div>
+          </section>
+          <section className="conversion-section" id="tarifs" aria-labelledby="price-title">
+            <div className="offer-copy">
+              <p className="overline">Un seul tarif. Tout Kloo.</p>
+              <h2 id="price-title">Un petit prix.<br />De la place pour tes projets.</h2>
+              <p className="offer-price">1,99 € <span>/ mois</span></p>
+              <p>7 jours gratuits sans carte. Ensuite, abonne-toi si tu souhaites continuer.</p>
+              <ul className="offer-list"><li>Suivi du budget et des dépenses</li><li>Objectifs d’épargne</li><li>Sur téléphone et ordinateur</li></ul>
+              <details className="offer-details"><summary>Comment se passe l’essai ?</summary><p>Crée ton compte et confirme ton email : tes 7 jours gratuits commencent sans carte. À la fin, ajoute un moyen de paiement uniquement si tu souhaites continuer à 1,99 € / mois. Aucun prélèvement automatique à la fin de l’essai.</p></details>
             </div>
-          </div>
-          <p className="transition-line">
-            Quand tu vois mieux, tu gères mieux. Kloo te donne cette visibilité en
-            2 minutes.
-          </p>
-        </section>
-
-        <section className="card fade-up">
-          <div className="section-kicker">La solution</div>
-          <h3 className="section-h">Kloo te simplifie la vie</h3>
-          <p className="section-sub">
-            Pas de tableaux compliqués. Pas de jargon. Juste ce qu&apos;il faut pour
-            piloter ton mois.
-          </p>
-          <div className="features-grid">
-            {[
-              {
-                icon: '👀',
-                title: 'Vois où part ton argent',
-                desc: 'Tu vois vite ce qui pèse dans ton budget.',
-              },
-              {
-                icon: '💳',
-                title: 'Sache combien il te reste',
-                desc: 'Tu sais exactement ce que tu peux encore dépenser.',
-              },
-              {
-                icon: '⚠️',
-                title: 'Anticipe les dépassements',
-                desc: 'Tu repères les écarts avant la fin du mois.',
-              },
-              {
-                icon: '🌱',
-                title: 'Mets de côté facilement',
-                desc: 'Même avec un petit budget, tu gardes une marge.',
-              },
-            ].map((feature) => (
-              <div className="feature-item" key={feature.title}>
-                <div className="feature-icon">{feature.icon}</div>
-                <strong>{feature.title}</strong>
-                <p>{feature.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="card fade-up">
-          <div className="section-kicker">PWA</div>
-          <h3 className="section-h" id="guide-app">
-            Ouvre Kloo puis installe l&apos;app sur ton écran d&apos;accueil
-          </h3>
-          <p className="section-sub">
-            La landing te sert à créer ton compte et te connecter. Une fois ton
-            accès actif, on t&apos;ouvre la vraie app Kloo sur <code>/app</code>,
-            et c&apos;est depuis cette app que tu peux l&apos;installer comme une PWA.
-          </p>
-          <div className="install-banner">
-            <strong>
-              Après connexion, Kloo t&apos;ouvre directement l&apos;app sur le même
-              domaine.
-            </strong>
-            <p>
-              Si tu veux la garder comme une vraie app, ajoute ensuite cette page
-              <code>/app</code> à ton écran d&apos;accueil.
-            </p>
-          </div>
-          <div className="install-grid">
-            <article className="install-card">
-              <span className="install-device-badge">iPhone / iPad</span>
-              <ol className="install-steps">
-                <li>Connecte-toi puis ouvre Kloo dans Safari.</li>
-                <li>Quand l&apos;app Kloo est ouverte, appuie sur Partager.</li>
-                <li>Choisis Sur l’écran d’accueil puis Ajouter.</li>
-              </ol>
-            </article>
-            <article className="install-card">
-              <span className="install-device-badge">Android</span>
-              <ol className="install-steps">
-                <li>Connecte-toi puis ouvre l&apos;app Kloo dans Chrome.</li>
-                <li>Appuie sur le menu ⋮ quand tu es dans l&apos;app.</li>
-                <li>Choisis Installer l’application.</li>
-              </ol>
-            </article>
-            <article className="install-card">
-              <span className="install-device-badge">Ordinateur</span>
-              <ol className="install-steps">
-                <li>Connecte-toi pour ouvrir Kloo sur <code>/app</code>.</li>
-                <li>Dans Chrome ou Edge, clique sur Installer.</li>
-                <li>Valide pour épingler Kloo comme une app.</li>
-              </ol>
-            </article>
-          </div>
-          <p className="install-note">
-            Tu n&apos;installes pas la landing : tu installes la vraie app Kloo,
-            une fois entrée dans <code>/app</code>.
-          </p>
-        </section>
-
-        <section className="card fade-up">
-          <div className="section-kicker">Le prix</div>
-          <h3 className="section-h">Un prix fait pour les étudiants</h3>
-          <p className="section-sub">Simple, clair, sans surprise.</p>
-          <div className="pricing-grid">
-            <div className="price-side">
-              <div className="price-main">
-                <div className="price-big">
-                  1,99 <span>€ / mois</span>
-                </div>
-                <p className="price-tagline">Moins qu&apos;un café par semaine.</p>
-              </div>
-              <ul className="guarantees">
-                <li>7 jours gratuits pour tester</li>
-                <li>Sans engagement</li>
-                <li>Résiliation en 1 clic depuis l&apos;app</li>
-                <li>Tes données sont sécurisées</li>
-              </ul>
-              <div className="pricing-disclaimer">
-                Après tes 7 jours gratuits, Kloo te proposera de passer au
-                paiement sécurisé pour continuer à 1,99 € par mois. Tu peux
-                arrêter quand tu veux.
-              </div>
+            {authCard}
+          </section>
+          <section className="help-section" id="aide" aria-labelledby="help-title">
+            <div className="section-heading"><p className="overline">Besoin d’un repère ?</p><h2 id="help-title">Les réponses, sans détour.</h2></div>
+            <div className="faq-list">
+              <details><summary>Comment commencer ?</summary><p>Crée ton compte avec le formulaire ci-dessus, puis confirme ton email pour accéder à Kloo pendant 7 jours, sans carte bancaire.</p></details>
+              <details><summary>Comment arrêter mon abonnement ?</summary><p>L’essai se termine sans prélèvement si tu ne t’abonnes pas. Si tu choisis ensuite un abonnement, tu peux le résilier depuis l’app Kloo.</p></details>
+              <details id="guide-app"><summary>Comment installer Kloo sur mon téléphone ?</summary><p>Connecte-toi et ouvre Kloo, puis suis les étapes pour ton appareil.</p><div className="device-guides"><details><summary>iPhone / iPad</summary><p>Dans Safari, ouvre Kloo après connexion. Appuie sur Partager, puis Sur l’écran d’accueil et Ajouter.</p></details><details><summary>Android</summary><p>Dans Chrome, ouvre Kloo après connexion. Appuie sur le menu ⋮, puis Installer l’application ou Ajouter à l’écran d’accueil.</p></details><details><summary>Ordinateur</summary><p>Ouvre Kloo dans Chrome ou Edge après connexion, puis utilise l’option Installer dans le navigateur si elle est disponible.</p></details></div></details>
+              <details><summary>J’ai déjà un compte</summary><p><a href="/connexion">Connecte-toi à Kloo</a> pour retrouver ton budget. Un lien de réinitialisation du mot de passe est disponible sur cette page.</p></details>
             </div>
-          </div>
-        </section>
-
-        {authCard}
-
-        <footer className="card footer">
-          <div className="footer-left">
-            <h3>Kloo est prêt pour ton essai gratuit.</h3>
-            <p>
-              Commence sur le site, puis ouvre Kloo dans la vraie app web sur
-              <code>/app</code>.
-            </p>
-          </div>
-          <div className="footer-links">
-            <a href="/infos-madagascar">Infos Madagascar</a>
-            <a href="/cgu">CGU</a>
-            <a href="/confidentialite">Politique de confidentialité</a>
-            <a href="mailto:contact@kloo.site">Support client</a>
-          </div>
-        </footer>
+          </section>
+        </main>
+        <footer className="saas-footer"><a href="/" className="brand">kloo<span>.</span></a><p>Ton budget, simplement.</p><nav aria-label="Liens utiles"><a href="/infos-madagascar">Infos Madagascar</a><a href="/cgu">CGU</a><a href="/confidentialite">Confidentialité</a><a href="mailto:contact@kloo.site">Contact</a></nav></footer>
       </div>
-
-      <div className={`toast${toastVisible ? ' show' : ''}`}>{toastMessage}</div>
-    </>
+      <div className={`toast${toastVisible ? ' show' : ''}`} role="status">{toastMessage}</div>
+    </div>
   );
 }

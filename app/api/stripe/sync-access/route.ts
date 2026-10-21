@@ -34,8 +34,9 @@ function normalizeSubscriptionStatus(status: string) {
     case 'past_due':
     case 'canceled':
     case 'incomplete':
-    case 'unpaid':
       return status;
+    case 'unpaid':
+      return 'past_due';
     default:
       return 'incomplete';
   }
@@ -123,19 +124,16 @@ async function syncSubscriptionRecord(userId: string, subscriptionId: string) {
       await syncBillingRecords(userId, subscription.customer);
     }
 
-    if (subscription.status !== 'active') {
-      return null;
-    }
-
     const syncData: any = {
       user_id: userId,
       provider: 'stripe',
       provider_customer_id: typeof subscription.customer === 'string' ? subscription.customer : null,
       provider_subscription_id: subscription.id,
-      status: 'active',
-      price_amount: 1.99,
+      status: normalizeSubscriptionStatus(subscription.status),
+      trial_ends_at: fromUnix(subscription.trial_end),
+      price_amount: (subscription.items.data[0]?.price.unit_amount ?? 199) / 100,
       currency: (subscription.currency ?? 'eur').toUpperCase(),
-      current_period_end_at: fromUnix(subscription.current_period_end),
+      current_period_end_at: fromUnix(subscription.current_period_end ?? subscription.items.data[0]?.current_period_end),
       cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
     };
 
@@ -166,14 +164,15 @@ async function syncBillingRecords(userId: string, customerId: string) {
     amount: invoice.total / 100,
     currency: invoice.currency.toUpperCase(),
     billed_at: fromUnix(invoice.status_transitions.paid_at || invoice.created),
-    status: invoice.status === 'paid' ? 'paid' : (invoice.status === 'open' || invoice.status === 'draft') ? 'upcoming' : 'failed',
+    status: invoice.status === 'paid' ? 'paid' : (invoice.status === 'open' || invoice.status === 'draft') ? 'pending' : 'failed',
     label: 'Abonnement Kloo',
   }));
 
   if (records.length > 0) {
-    await admin.from('billing_records').upsert(records, {
+    const result = await admin.from('billing_records').upsert(records, {
       onConflict: 'provider_invoice_id',
     });
+    if (result.error) throw result.error;
   }
 }
 

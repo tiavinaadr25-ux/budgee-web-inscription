@@ -629,3 +629,146 @@ body {
   .form-divider { margin-left: -18px; margin-right: -18px; }
   .nav-app-link { display: none; }
 }
+
+/* Marketing homepage: intentionally scoped to preserve the account pages. */
+.saas-landing { background:linear-gradient(170deg,#f9f3e8 0%,#ede4d3 50%,#e5d9c8 100%); --blue:#2558a0; --blue-light:#3a6fc4; --blue-soft:#e8f0fb; --gold:#c97b0a; --paper:#fff; --shadow-btn:none; min-height:100vh; }
+.saas-landing .page { width:min(1180px,calc(100% - 64px)); padding:0; }
+.saas-landing .brand { color:var(--teal); font-size:36px; }
+.saas-landing .brand span { color:#c97b0a; }
+.site-header { display:flex; align-items:center; justify-content:space-between; gap:28px; min-height:96px; border-bottom:1px solid rgba(41,57,85,.11); }
+.site-menu { display:flex; align-items:center; gap:30px; }
+.site-menu>a { font-size:14px; font-weight:700; text-decoration:none; color:#4a5568; padding:12px 0; }
+.site-menu>a:hover { color:#2558a0; }
+.site-menu .menu-login { margin-left:28px; }
+.site-menu .nav-cta { padding:13px 20px; color:white; border-radius:12px; box-shadow:none; }
+.menu-toggle { display:none; }
+.saas-landing main section, .saas-landing #inscription, .saas-landing details { scroll-margin-top:24px; }
+.saas-landing .hero { display:grid; grid-template-columns:1.12fr 1fr; gap:44px; align-items:center; padding:66px 0 64px; margin:0; }
+.saas-landing .hero-copy { padding:0; background:transparent; box-shadow:none; border:0; overflow:visible; }
+.saas-landing .hero-copy:before { display:none; }
+.saas-landing .eyebrow { background:transparent; padding:0; font-size:12px; font-weight:700; color:#2558a0; margin-bottom:26px; }
+.saas-landing .eyebrow-dot { background:#2558a0; animation:none; }
+.saas-landing .hero-h1 { font-family:var(--font-dm-sans),sans-serif; font-size:clamp(42px,4.8vw,66px); line-height:1.06; letter-spacing:-.065em; font-weight:500; margin-bottom:24px; }
+.saas-landing .hero-sub { max-width:390px; font-size:17px; line-height:1.65; margin-bottom:28px; }
+.hero-actions { display:flex; align-items:center; flex-wrap:wrap; gap:24px; }
+.saas-landing .btn-primary { border-radius:12px; font-size:15px; padding:16px 23px; font-weight:700; gap:26px; box-shadow:none; }
+.text-link { color:#2558a0; font-size:14px; font-weight:700; text-decoration:none; }
+.hero-terms { font-size:13px; line-height:1.7; color:#4a5568; margin-top:19px; }
+.hero-terms span { display:block; max-width:350px; font-size:11px; color:#4a5568; margin-top:4px; }
+.saas-landing .hero-phone-card { background:#e8f0fb; background-image:radial-gradient(circle at 20% 10%,#fff3d0,transparent 65%); border:0; border-radius:28px; min-height:0; height:540px; margin:0; padding:35px 50px 0; box-shadow:none; overflow:hidden; }
+.saas-landing .hero-phone-card:before { display:none; }
+.saas-landing .phone-wrap { max-width:290px; animation:none; }
+.saas-landing .phone-shell { box-shadow:0 24px 48px #29395529; }
+.saas-landing .preview-greeting { font-size:14px; font-weight:700; color:#1a1a1a; letter-spacing:-.03em; }
+.saas-landing .progress-fill { animation:none; }
+.benefits-section { padding:48px 0 68px; border-top:1px solid rgba(41,57,85,.11); }
+.overline { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:#4a5568; font-weight:700; margin-bottom:13px; }
+.section-heading h2, .offer-copy h2 { font-size:clamp(27px,3vw,38px); line-height:1.15; letter-spacing:-.045em; font-weight:500; }
+.benefit-grid { display:grid; grid-template-columns:repeat(3,1fr); margin-top:34px; gap:38px; }
+.benefit { padding-right:28px; }
+.benefit-number { display:inline-flex; justify-content:center; align-items:center; width:36px; height:36px; border-radius:11px; background:#e8f0fb; color:#2558a0; font-size:12px; font-weight:700; margin-bottom:18px; }
+.benefit h3 { font-size:18px; letter-spacing:-.03em; font-weight:700; margin-bottom:9px; }
+.benefit p { color:#4a5568; font-size:14px; line-height:1.65; max-width:290px; }
+.conversion-section { display:grid; grid-template-columns:1fr 1fr; gap:70px; padding:52px; background:#fff8ec; border-radius:28px; align-items:start; }
+.offer-copy { padding-top:15px; }
+.offer-copy>p:not(.overline):not(.offer-price) { font-size:14px; color:#4a5568; line-height:1.65; max-width:320px; }
+.offer-price { font-size:52px; font-weight:500; letter-spacing:-.06em; color:#2558a0; margin:24px 0 10px; }
+.offer-price span { font-size:16px; color:#4a5568; letter-spacing:0; }
+.offer-list { list-style:none; display:grid; gap:12px; margin:25px 0; font-size:14px; }
+.offer-list li:before { content:'✓'; color:#2558a0; margin-right:12px; }
+.saas-landing #inscription { border:1px solid rgba(41,57,85,.13); border-radius:20px; padding:26px; box-shadow:0 8px 30px #29395506; margin:0; }
+.saas-landing .signup-tabs { margin-bottom:16px; font-size:13px; }
+.saas-landing .trial-badge { display:none; }
+.saas-landing .signup-form-h { font-size:23px; font-weight:500; }
+.saas-landing .signup-form-sub { font-size:13px; line-height:1.5; }
+.saas-landing .form-divider { margin:20px 0; }
+.saas-landing .step-block { border:0; padding:0; background:transparent; border-radius:0; }
+.saas-landing .step-title { display:none; }
+.saas-landing .field-label { font-size:11px; text-transform:none; letter-spacing:0; color:#4a5568; }
+.saas-landing .field { font-size:14px; padding:12px; border-radius:9px; }
+.saas-landing .profile-btn { font-size:11px; padding:10px 6px; border-radius:8px; }
+.saas-landing .stripe-block { background:#e8f0fb; border:0; padding:12px; margin:0; border-radius:10px; }
+.saas-landing .stripe-block p { line-height:1.5; font-size:11px; }
+.saas-landing .stripe-title { font-size:12px; }
+.saas-landing .submit-btn { border-radius:10px; font-size:14px; padding:14px; box-shadow:none; }
+.saas-landing .secure-line { font-size:11px; }
+.saas-landing .secure-line-top { display:none; }
+.saas-landing .secure-line>br { display:none; }
+.saas-landing .status-box { font-size:12px; line-height:1.5; }
+.help-section { display:grid; grid-template-columns:.85fr 1.15fr; gap:70px; padding:80px 0; }
+.faq-list>details { border-bottom:1px solid rgba(41,57,85,.13); padding:18px 0; }
+.faq-list>details:first-child { padding-top:0; }
+.saas-landing summary { cursor:pointer; list-style:none; display:flex; align-items:center; justify-content:space-between; gap:16px; font-size:14px; font-weight:700; padding:5px 0; }
+.saas-landing summary::-webkit-details-marker { display:none; }
+.saas-landing summary:after { content:'+'; font-size:20px; font-weight:400; flex-shrink:0; }
+.saas-landing details[open]>summary:after { content:'−'; }
+.saas-landing details p { font-size:13px; line-height:1.7; color:#4a5568; margin:14px 0 5px; }
+.saas-landing details a { color:#2558a0; text-decoration:underline; }
+.offer-details { border-top:1px solid rgba(201,123,10,.22); padding-top:15px; }
+.device-guides { background:#fff8ec; padding:12px 16px; border-radius:12px; margin-top:16px; }
+.device-guides details { padding:7px 0; }
+.saas-footer { display:flex; align-items:center; gap:25px; border-top:1px solid rgba(41,57,85,.11); padding:30px 0; }
+.saas-footer p { font-size:12px; color:#4a5568; }
+.saas-footer nav { display:flex; flex-wrap:wrap; gap:20px; margin-left:auto; }
+.saas-footer nav a { text-decoration:none; color:#4a5568; font-size:11px; }
+.skip-link { position:absolute; left:20px; top:-100px; background:#2558a0; color:white; padding:14px; z-index:20; }
+.skip-link:focus { top:10px; }
+.saas-landing :focus-visible { outline:3px solid #c97b0a; outline-offset:5px; }
+@media(max-width:1000px) {
+ .site-menu { gap:18px; } .site-menu .menu-login { margin-left:0; }
+ .saas-landing .hero { gap:25px; } .saas-landing .hero-phone-card { padding:35px 20px 0; height:510px; }
+ .conversion-section { padding:32px; gap:35px; } .help-section { gap:35px; }
+}
+@media(max-width:760px) {
+ .saas-landing .page { width:calc(100% - 36px); }
+ .site-header { min-height:78px; position:relative; }
+ .menu-toggle { display:block; font:inherit; font-size:13px; background:white; color:#2558a0; border:1px solid rgba(41,57,85,.13); border-radius:9px; padding:12px 16px; }
+ .site-menu { display:none; position:absolute; top:70px; left:0; right:0; background:#fff; padding:20px; border:1px solid rgba(41,57,85,.13); border-radius:16px; z-index:30; box-shadow:0 15px 40px #29395515; }
+ .site-menu.is-open { display:flex; flex-direction:column; align-items:stretch; gap:8px; }
+ .site-menu .nav-cta { justify-content:center; }
+ .saas-landing .hero { grid-template-columns:1fr; padding:44px 0; gap:32px; }
+ .saas-landing .hero-h1 { font-size:clamp(42px,9vw,60px); }
+ .saas-landing .hero-sub { font-size:16px; }
+ .saas-landing .hero-phone-card { height:360px; padding-top:24px; }
+ .saas-landing .phone-wrap { max-width:250px; }
+ .benefits-section { padding:35px 0 44px; }
+ .benefit-grid { grid-template-columns:1fr; gap:24px; }
+ .benefit { display:grid; grid-template-columns:36px 1fr; column-gap:16px; padding:0; }
+ .benefit-number { grid-row:span 2; margin:0; } .benefit p { max-width:none; }
+ .conversion-section { grid-template-columns:1fr; padding:24px 18px; gap:28px; margin:0 -4px; }
+ .saas-landing #inscription { padding:20px 16px; }
+ .saas-landing .profile-btns { grid-template-columns:repeat(3,1fr); }
+ .help-section { grid-template-columns:1fr; padding:48px 0; gap:30px; }
+ .saas-footer { flex-wrap:wrap; gap:16px; } .saas-footer nav { width:100%; margin:0; gap:16px; }
+}
+@media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } .saas-landing *, .saas-landing *:before, .saas-landing *:after { animation:none!important; transition:none!important; } }
+
+/* Account access stays visible beside the navigation at every breakpoint. */
+.site-menu { margin-left:auto; }
+.header-account { display:flex; align-items:center; gap:20px; }
+.header-login { font-size:14px; font-weight:700; color:var(--blue); text-decoration:none; }
+.header-account .nav-cta { border-radius:12px; padding:13px 20px; box-shadow:none; }
+@media(max-width:760px) {
+ .site-header { gap:10px; }
+ .saas-landing .brand { font-size:30px; }
+ .menu-toggle { margin-left:auto; padding:10px; font-size:12px; }
+ .site-menu { margin-left:0; }
+ .header-account { gap:10px; }
+ .header-login { font-size:12px; }
+ .header-account .nav-cta { font-size:12px; padding:11px 12px; }
+}
+@media(max-width:360px) {
+ .site-header { flex-wrap:wrap; padding:14px 0; }
+ .header-account { margin-left:auto; }
+}
+
+/* Fit the entire product preview, including the bottom of the phone. */
+.saas-landing .hero-phone-card { height:auto; min-height:540px; padding:28px 24px; align-items:center; overflow:visible; }
+.saas-landing .phone-wrap { max-width:290px; }
+@media(max-width:760px) {
+ .saas-landing .hero-phone-card { height:auto; min-height:0; padding:24px 18px; }
+ .saas-landing .phone-wrap { max-width:250px; }
+}
+/* Scale the mockup as a whole, keeping every screen element and the phone frame visible. */
+.saas-landing .phone-wrap { max-width:290px; zoom:.72; }
+@media(max-width:760px) { .saas-landing .phone-wrap { max-width:290px; zoom:.72; } }

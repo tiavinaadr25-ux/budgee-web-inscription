@@ -37,8 +37,9 @@ function normalizeSubscriptionStatus(status: string) {
     case 'past_due':
     case 'canceled':
     case 'incomplete':
-    case 'unpaid':
       return status;
+    case 'unpaid':
+      return 'past_due';
     default:
       return 'incomplete';
   }
@@ -92,6 +93,7 @@ async function findLatestSubscriptionId(userId: string, email: string) {
   const { data: storedSubscription, error: storedSubscriptionError } = await admin
     .from('subscriptions')
     .select('provider_subscription_id')
+    .eq('provider', 'stripe')
     .eq('user_id', userId)
     .not('provider_subscription_id', 'is', null)
     .order('created_at', { ascending: false })
@@ -167,7 +169,7 @@ async function syncSubscriptionRecord(
         price_amount: typeof unitAmount === 'number' ? unitAmount / 100 : 1.99,
         currency: (subscription.currency ?? 'eur').toUpperCase(),
         trial_ends_at: fromUnix(subscription.trial_end),
-        current_period_end_at: fromUnix(subscription.current_period_end),
+        current_period_end_at: fromUnix(subscription.current_period_end ?? subscription.items.data[0]?.current_period_end),
         cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
       },
       { onConflict: 'provider_subscription_id' },

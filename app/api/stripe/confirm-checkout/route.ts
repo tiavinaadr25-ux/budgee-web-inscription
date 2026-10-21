@@ -35,8 +35,9 @@ function normalizeSubscriptionStatus(status: string) {
     case 'past_due':
     case 'canceled':
     case 'incomplete':
-    case 'unpaid':
       return status;
+    case 'unpaid':
+      return 'past_due';
     default:
       return 'incomplete';
   }
@@ -165,6 +166,10 @@ async function syncSubscriptionRecord({
     trial_end: number | null;
   };
 
+  if (!['active', 'trialing'].includes(subscription.status)) {
+    throw new ApiRouteError('Ton paiement n’est pas encore confirmé. Réessaie dans un instant.', 409);
+  }
+
   const result = await admin
     .from('subscriptions')
     .upsert(
@@ -175,10 +180,10 @@ async function syncSubscriptionRecord({
           typeof subscription.customer === 'string' ? subscription.customer : customerId,
         provider_subscription_id: subscription.id,
         status: normalizeSubscriptionStatus(subscription.status),
-        price_amount: 1.99,
+        price_amount: (subscription.items.data[0]?.price.unit_amount ?? 199) / 100,
         currency: (subscription.currency ?? 'eur').toUpperCase(),
         trial_ends_at: fromUnix(subscription.trial_end),
-        current_period_end_at: fromUnix(subscription.current_period_end),
+        current_period_end_at: fromUnix(subscription.current_period_end ?? subscription.items.data[0]?.current_period_end),
         cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
       },
       { onConflict: 'provider_subscription_id' },
@@ -192,14 +197,22 @@ async function syncSubscriptionRecord({
 
   await upsertPaymentMethod(userId, subscription.default_payment_method);
 
-  // Ajout d'une ligne dans l'historique de facturation
-  await admin.from('billing_records').insert({
-    user_id: userId,
-    label: `Abonnement Kloo (${(subscription.currency ?? 'eur').toUpperCase()})`,
-    amount: (subscription.items.data[0]?.price.unit_amount ?? 0) / 100,
-    status: 'success',
-    billed_at: fromUnix(subscription.current_period_start)
-  });
+  const invoiceId = typeof subscription.latest_invoice === 'string'
+    ? subscription.latest_invoice : subscription.latest_invoice?.id;
+  if (invoiceId) {
+    const invoice = await stripe.invoices.retrieve(invoiceId);
+    const billing = await admin.from('billing_records').upsert({
+      user_id: userId,
+      subscription_id: result.data?.id ?? null,
+      provider_invoice_id: invoice.id,
+      label: 'Abonnement Kloo',
+      amount: (invoice.amount_paid ?? invoice.amount_due ?? 0) / 100,
+      currency: (invoice.currency ?? 'eur').toUpperCase(),
+      status: invoice.status === 'paid' ? 'paid' : invoice.status === 'open' || invoice.status === 'draft' ? 'pending' : 'failed',
+      billed_at: fromUnix(invoice.status_transitions?.paid_at ?? invoice.created),
+    }, { onConflict: 'provider_invoice_id' });
+    if (billing.error) throw billing.error;
+  }
 
   return result.data ?? null;
 }
@@ -255,6 +268,10 @@ export async function POST(request: NextRequest) {
 
     if (authenticatedUser.id !== userId) {
       throw new ApiRouteError('Compte Kloo invalide.', 403);
+    }
+
+    if (checkoutSession.status !== 'complete' || !['paid', 'no_payment_required'].includes(checkoutSession.payment_status)) {
+      throw new ApiRouteError('Le paiement n’est pas encore confirmé. Réessaie dans un instant.', 409);
     }
 
     const subscription = await syncSubscriptionRecord({

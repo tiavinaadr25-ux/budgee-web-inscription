@@ -144,18 +144,26 @@ export async function POST(request: NextRequest) {
       throw new ApiRouteError('Email Kloo introuvable pour ce compte.', 400);
     }
 
-    let trialDays = 7;
+    if (!admin) throw new ApiRouteError('La vérification de l’essai n’est pas configurée.', 503);
+    const existing = await admin.from('subscriptions')
+      .select('id, status, trial_ends_at, current_period_end_at')
+      .eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (existing.error) throw existing.error;
+    const access = existing.data;
+    if (!access) throw new ApiRouteError('Démarre ton essai gratuit avant de t’abonner.', 409);
+    const now = Date.now();
+    if (access.status === 'active'
+      || (access.status === 'trialing' && (!access.trial_ends_at || new Date(access.trial_ends_at).getTime() > now))
+      || (['past_due', 'canceled'].includes(access.status) && access.current_period_end_at
+        && new Date(access.current_period_end_at).getTime() > now)) {
+      throw new ApiRouteError('Ton accès Kloo est encore actif. Le paiement sera disponible à la fin de l’essai.', 409);
+    }
+    const trialDays = 0;
 
-    // DECISION: un compte qui a déjà eu un abonnement ou un essai ne doit pas récupérer un nouveau trial Stripe.
-    if (admin) {
-      const { data: existingSubs } = await admin
-        .from('subscriptions')
-        .select('id')
-        .eq('user_id', userId);
-
-      if (existingSubs && existingSubs.length > 0) {
-        trialDays = 0;
-      }
+    const configuredPrice = await stripe.prices.retrieve(stripePriceId);
+    if (!configuredPrice.active || configuredPrice.unit_amount !== 199 || configuredPrice.currency !== 'eur'
+      || configuredPrice.recurring?.interval !== 'month' || configuredPrice.recurring.interval_count !== 1) {
+      throw new ApiRouteError('Le paiement par carte est temporairement indisponible. Contacte le support.', 503);
     }
 
     const customerId = await getOrCreateStripeCustomer({
@@ -173,10 +181,6 @@ export async function POST(request: NextRequest) {
         trial_days: String(trialDays),
       },
     };
-
-    if (trialDays > 0) {
-      subscriptionData.trial_period_days = trialDays;
-    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

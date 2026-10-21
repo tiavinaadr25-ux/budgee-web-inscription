@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kloo-pwa-v2';
+const CACHE_NAME = 'kloo-pwa-v3-guide-voaray';
 const getScopePath = () => {
   const scopeUrl = new URL(self.registration.scope);
   return scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : `${scopeUrl.pathname}/`;
@@ -42,7 +42,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   const requestUrl = new URL(request.url);
-  if (requestUrl.origin !== self.location.origin) {
+  if (requestUrl.origin !== self.location.origin || requestUrl.pathname.startsWith('/api/')) {
     return;
   }
 
