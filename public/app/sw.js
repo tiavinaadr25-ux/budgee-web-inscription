@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kloo-pwa-v5-payment-method';
+const CACHE_NAME = 'kloo-pwa-v6-csv-download';
 const getScopePath = () => {
   const scopeUrl = new URL(self.registration.scope);
   return scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : `${scopeUrl.pathname}/`;
