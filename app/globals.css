@@ -631,7 +631,7 @@ body {
 }
 
 /* Marketing homepage: intentionally scoped to preserve the account pages. */
-.saas-landing { background:linear-gradient(170deg,#f9f3e8 0%,#ede4d3 50%,#e5d9c8 100%); --blue:#2558a0; --blue-light:#3a6fc4; --blue-soft:#e8f0fb; --gold:#c97b0a; --paper:#fff; --shadow-btn:none; min-height:100vh; }
+.saas-landing { background:#fff; --blue:#2558a0; --blue-light:#3a6fc4; --blue-soft:#e8f0fb; --gold:#c97b0a; --paper:#fff; --shadow-btn:none; min-height:100vh; }
 .saas-landing .page { width:min(1180px,calc(100% - 64px)); padding:0; }
 .saas-landing .brand { color:var(--teal); font-size:36px; }
 .saas-landing .brand span { color:#c97b0a; }
@@ -648,7 +648,7 @@ body {
 .saas-landing .hero-copy:before { display:none; }
 .saas-landing .eyebrow { background:transparent; padding:0; font-size:12px; font-weight:700; color:#2558a0; margin-bottom:26px; }
 .saas-landing .eyebrow-dot { background:#2558a0; animation:none; }
-.saas-landing .hero-h1 { font-family:var(--font-dm-sans),sans-serif; font-size:clamp(42px,4.8vw,66px); line-height:1.06; letter-spacing:-.065em; font-weight:500; margin-bottom:24px; }
+.saas-landing .hero-h1 { font-family:var(--font-fraunces),serif; font-size:clamp(42px,4.8vw,66px); line-height:1.1; letter-spacing:-.035em; font-weight:400; margin-bottom:24px; }
 .saas-landing .hero-sub { max-width:390px; font-size:17px; line-height:1.65; margin-bottom:28px; }
 .hero-actions { display:flex; align-items:center; flex-wrap:wrap; gap:24px; }
 .saas-landing .btn-primary { border-radius:12px; font-size:15px; padding:16px 23px; font-weight:700; gap:26px; box-shadow:none; }
