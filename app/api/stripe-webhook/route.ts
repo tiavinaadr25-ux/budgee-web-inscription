@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { applyCardUpdate } from '../_lib/update-card';
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -319,6 +320,10 @@ export async function POST(request: NextRequest) {
       switch (stripeEvent.type) {
         case 'checkout.session.completed': {
           const session = stripeEvent.data.object as Stripe.Checkout.Session;
+          if (session.mode === 'setup' && session.metadata?.purpose === 'kloo-card-update' && session.metadata.user_id) {
+            await applyCardUpdate(stripe, admin, session, session.metadata.user_id);
+            break;
+          }
           if (session.mode !== 'subscription') {
             break;
           }

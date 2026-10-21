@@ -551,7 +551,7 @@ export default function PaymentClient() {
         <a href="/" aria-label="Fermer" title="Fermer" style={pageStyles.closeLink}>
           ×
         </a>
-        <div style={pageStyles.kicker}>Paiement Kloo</div>
+        <div style={pageStyles.kicker}>Paiement Kloo</div><p style={{ marginBottom: 18 }}><a href="/paiement/gestion">Gérer ma carte ou passer à Mobile Money</a> · <a href="/paiement/simulation">Simuler un paiement Voaray</a></p>
         <h1 style={pageStyles.title}>{title}</h1>
         <p style={pageStyles.lead}>{lead}</p>
         <p style={pageStyles.info} role="status" aria-live="polite">{message}</p>

@@ -1245,7 +1245,7 @@ export default function LandingClient({
                 <a href="#inscription" className="btn-primary" onClick={openSignupSection}>Essayer 7 jours <span aria-hidden="true">↗</span></a>
                 <a href="#fonctionnalites" className="text-link">Découvrir Kloo <span aria-hidden="true">↓</span></a>
               </div>
-              <p className="hero-terms">Puis 1,99 € / mois · Sans engagement<br /><span>Sans carte bancaire. Tu choisis de t’abonner à la fin de l’essai.</span></p>
+              <p className="hero-terms">Puis 1,99 € / mois par carte ou 9 000 Ar / mois par Mobile Money<br /><span>Sans carte bancaire. Tu choisis de t’abonner à la fin de l’essai.</span></p>
             </article>
           <aside
             className="card hero-phone-card fade-up"
@@ -1401,9 +1401,9 @@ export default function LandingClient({
               <p className="overline">Un seul tarif. Tout Kloo.</p>
               <h2 id="price-title">Un petit prix.<br />De la place pour tes projets.</h2>
               <p className="offer-price">1,99 € <span>/ mois</span></p>
-              <p>7 jours gratuits sans carte. Ensuite, abonne-toi si tu souhaites continuer.</p>
+              <p>Ou 9 000 Ar pour un mois par Mobile Money via Voaray, sans renouvellement automatique. Opérateurs selon disponibilité.</p><p>7 jours gratuits sans carte. Ensuite, choisis ton paiement si tu souhaites continuer.</p>
               <ul className="offer-list"><li>Suivi du budget et des dépenses</li><li>Objectifs d’épargne</li><li>Sur téléphone et ordinateur</li></ul>
-              <details className="offer-details"><summary>Comment se passe l’essai ?</summary><p>Crée ton compte et confirme ton email : tes 7 jours gratuits commencent sans carte. À la fin, ajoute un moyen de paiement uniquement si tu souhaites continuer à 1,99 € / mois. Aucun prélèvement automatique à la fin de l’essai.</p></details>
+              <details className="offer-details"><summary>Comment se passe l’essai ?</summary><p>Crée ton compte et confirme ton email : tes 7 jours gratuits commencent sans carte. À la fin, ajoute un moyen de paiement uniquement si tu souhaites continuer par carte à 1,99 € / mois ou par Mobile Money à 9 000 Ar pour un mois. Aucun prélèvement automatique à la fin de l’essai.</p></details>
             </div>
             {authCard}
           </section>
