@@ -674,6 +674,10 @@ body {
 .offer-copy>p:not(.overline):not(.offer-price) { font-size:14px; color:#4a5568; line-height:1.65; max-width:320px; }
 .offer-price { font-size:52px; font-weight:500; letter-spacing:-.06em; color:#2558a0; margin:24px 0 10px; }
 .offer-price span { font-size:16px; color:#4a5568; letter-spacing:0; }
+.offer-price-options { display:flex; align-items:baseline; flex-wrap:wrap; gap:8px 10px; font-size:clamp(22px,2.6vw,36px); }
+.offer-price-options strong { font-weight:500; white-space:nowrap; }
+.offer-price-options strong span { font-size:13px; }
+.offer-price-options .offer-price-or { font-size:16px; font-weight:400; }
 .offer-list { list-style:none; display:grid; gap:12px; margin:25px 0; font-size:14px; }
 .offer-list li:before { content:'✓'; color:#2558a0; margin-right:12px; }
 .saas-landing #inscription { border:1px solid rgba(41,57,85,.13); border-radius:20px; padding:26px; box-shadow:0 8px 30px #29395506; margin:0; }

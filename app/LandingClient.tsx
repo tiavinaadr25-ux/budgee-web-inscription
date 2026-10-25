@@ -1400,8 +1400,8 @@ export default function LandingClient({
             <div className="offer-copy">
               <p className="overline">Un seul tarif. Tout Kloo.</p>
               <h2 id="price-title">Un petit prix.<br />De la place pour tes projets.</h2>
-              <p className="offer-price">1,99 € <span>/ mois</span></p>
-              <p>Ou 9 000 Ar pour un mois par Mobile Money via Voaray, sans renouvellement automatique. Opérateurs selon disponibilité.</p><p>7 jours gratuits sans carte. Ensuite, choisis ton paiement si tu souhaites continuer.</p>
+              <p className="offer-price offer-price-options"><strong>1,99 € <span>/ mois</span></strong><span className="offer-price-or">ou</span><strong>9 000 Ar <span>/ mois</span></strong></p>
+              <p>7 jours gratuits sans carte. Ensuite, choisis ton paiement si tu souhaites continuer.</p>
               <ul className="offer-list"><li>Suivi du budget et des dépenses</li><li>Objectifs d’épargne</li><li>Sur téléphone et ordinateur</li></ul>
               <details className="offer-details"><summary>Comment se passe l’essai ?</summary><p>Crée ton compte et confirme ton email : tes 7 jours gratuits commencent sans carte. À la fin, ajoute un moyen de paiement uniquement si tu souhaites continuer par carte à 1,99 € / mois ou par Mobile Money à 9 000 Ar pour un mois. Aucun prélèvement automatique à la fin de l’essai.</p></details>
             </div>
