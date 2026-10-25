@@ -3,7 +3,7 @@ import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import { getRecurringExpenseMonthKey } from '../lib/recurringExpenses';
 import { formatEuros } from '../lib/currency';
 import { colors } from '../theme/tokens';
-import { parseMoney, notify } from '../lib/money';
+import { parseMoney, inputAmountFontSize, notify } from '../lib/money';
 
 export function AddExpenseModal({ visible, categories, onClose, onSave }) {
   const [amount, setAmount] = useState('');
@@ -34,7 +34,7 @@ export function AddExpenseModal({ visible, categories, onClose, onSave }) {
         <View style={s.header}><Text style={s.title}>Nouvelle dépense</Text><Pressable disabled={busy} onPress={close} accessibilityLabel="Fermer" style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
           <Text style={s.label}>Combien as-tu dépensé ?</Text>
-          <TextInput ref={amountInput} accessibilityLabel="Montant de la dépense" keyboardType="decimal-pad" inputMode="decimal" placeholder="0,00" placeholderTextColor={colors.textSoft} value={amount} editable={!busy} onChangeText={v => {setAmount(v);setError('');}} onSubmitEditing={save} returnKeyType="done" style={s.amount} />
+          <TextInput ref={amountInput} accessibilityLabel="Montant de la dépense" keyboardType="decimal-pad" inputMode="decimal" placeholder="0,00" placeholderTextColor={colors.textSoft} value={amount} editable={!busy} onChangeText={v => {setAmount(v);setError('');}} onSubmitEditing={save} returnKeyType="done" style={[s.amount,{fontSize:inputAmountFontSize(amount)}]} />
           <Text style={s.label}>Dans quelle catégorie ?</Text><View style={s.categories}>{categories.map(c => <Pressable key={c.id} accessibilityRole="radio" accessibilityState={{checked:selected?.id === c.id}} disabled={busy} onPress={() => setCategoryId(c.id)} style={[s.category, selected?.id === c.id && s.selected]}><Text style={s.emoji}>{c.emoji}</Text><Text style={s.categoryText}>{c.label}</Text>{selected?.id === c.id && <Text style={s.check}>✓</Text>}</Pressable>)}</View>
           <Text style={s.label}>Description <Text style={s.optional}>(facultatif)</Text></Text>
           <TextInput accessibilityLabel="Description facultative" placeholder={`Ex. ${selected?.label || 'Courses'}, café…`} placeholderTextColor={colors.textSoft} value={name} editable={!busy} onChangeText={setName} onSubmitEditing={save} returnKeyType="done" style={s.input} />

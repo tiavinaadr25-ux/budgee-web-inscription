@@ -4,6 +4,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const name = 'index-51b57ea0a19a6bf49f360ef6f56c6ba9.js';
 const patches = [
+ ["onSave:async e=>{try{Et&&await(0,_.upsertBudgetCategories)(Et,At,e),Se(e),Ke(!1),Yt('dashboard')}catch(e){o.default.alert('Budget non enregistr\\xe9',zt(e,\"On n\\u2019a pas r\\xe9ussi \\xe0 enregistrer les nouvelles enveloppes.\"))}}","onSave:async e=>{try{Et&&await(0,_.upsertBudgetCategories)(Et,At,e),Se(e),Ke(!1),Yt('dashboard');return!0}catch(e){o.default.alert('Budget non enregistr\\xe9',zt(e,\"On n\\u2019a pas r\\xe9ussi \\xe0 enregistrer les nouvelles enveloppes.\"));return!1}}"],
  ["onSave:e=>{(async()=>{await on(e)&&(ut(null),Xe(!1))})()}","onSave:async e=>{const t=await on(e);return t&&(ut(null),Xe(!1)),t}"],
  ["onSave:async e=>{await rn(e)&&(Be(!1),Yt('dashboard'))}","onSave:async e=>{const t=await rn(e);return t&&Be(!1),t}"],
  ["subscription:pe,onOpenWebsite:en,onLogout:un","subscription:pe,onOpenWebsite:()=>globalThis.location.assign(\"/paiement\"),onLogout:un"],

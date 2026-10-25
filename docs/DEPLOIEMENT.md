@@ -58,3 +58,9 @@ Les composants web éditables sont dans web-app/components et le calcul des mont
 Les formulaires attendent le résultat du stockage avant de se vider, gardent les champs en cas d’échec et verrouillent les doubles clics. Une addition d’épargne augmente currentAmount et monthlyContribution du même montant ; modifier un objectif sans nouveau versement ne compte pas le montant du mois une deuxième fois. Les anciens soldes ne sont pas recalculés automatiquement : Modifier → Total déjà épargné permet une correction explicite.
 
 Vérifications : tests/web-flows.cjs, neuf suites de tests de régression et contrôle des vrais composants dans un navigateur sur données fictives (50 + 10 = 60, progression 60 %, échec et reprise d’une dépense, double clic). Aucun compte client réel n’a été modifié pour ces tests.
+
+## Saisie tactile et grands montants
+
+Le budget utilise désormais un formulaire web sans fermeture globale du clavier au toucher. Chaque libellé peut donner le focus à son montant et la touche Suivant reste une option. Les champs conservent une taille minimale de 16 px. AutoAmount mesure la largeur réelle du texte et de son conteneur, réduit la police en cas de besoin et retrouve sa taille initiale si la place augmente. Les colonnes du tableau de bord réservent la place des informations de droite.
+
+Contrôles sur données fictives : colonne de 320 px, montants à six chiffres affichés en entier, passage direct du champ Courses au champ Loyer par clic, dix suites de tests incluant adaptive-amount.cjs et web-flows.cjs.

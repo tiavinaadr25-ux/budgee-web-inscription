@@ -1,17 +1,18 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatEuros } from '../lib/currency';
 import { colors } from '../theme/tokens';
+import { AutoAmount } from './AutoAmount';
 
 export function SavingsScreen({savingsBudget,savingsGoals,savingsTotal,onAddGoal,onEditGoal}) {
   const monthTotal=savingsGoals.reduce((sum,g)=>sum+g.monthlyContribution,0);
   return <ScrollView style={s.screen} contentContainerStyle={s.content}>
     <View style={s.row}><Text style={s.title}>Épargne</Text><Pressable onPress={onAddGoal} style={s.newButton}><Text style={s.newText}>+ Objectif</Text></Pressable></View>
-    <View style={s.banner}><Text style={s.hint}>TOTAL ÉPARGNÉ</Text><Text style={s.total}>{formatEuros(savingsTotal)}</Text><Text style={s.muted}>{formatEuros(monthTotal)} ajoutés ce mois · {savingsGoals.length} objectif{savingsGoals.length>1?'s':''}</Text></View>
+    <View style={s.banner}><Text style={s.hint}>TOTAL ÉPARGNÉ</Text><AutoAmount maxFontSize={40} style={s.total}>{formatEuros(savingsTotal)}</AutoAmount><Text style={s.muted}>{formatEuros(monthTotal)} ajoutés ce mois · {savingsGoals.length} objectif{savingsGoals.length>1?'s':''}</Text></View>
     <Text style={s.section}>Mes objectifs</Text>
     {!savingsGoals.length?<View style={s.card}><Text style={s.name}>Un projet à financer ?</Text><Text style={s.muted}>Crée ton objectif, même si tu pars de zéro. Chaque ajout fera progresser ton épargne.</Text><Pressable onPress={onAddGoal} style={s.add}><Text style={s.addText}>Créer mon premier objectif</Text></Pressable></View>:null}
     {savingsGoals.map(g=>{const pct=g.targetAmount>0?Math.min(Math.round(g.currentAmount/g.targetAmount*100),100):0;const remaining=Math.max(g.targetAmount-g.currentAmount,0);return <View key={g.id} style={s.card}>
       <View style={s.row}><Text style={s.name}>{g.emoji} {g.name}</Text><Pressable onPress={()=>onEditGoal(g)} accessibilityLabel={`Modifier ${g.name}`} style={s.edit}><Text style={s.editText}>Modifier</Text></Pressable></View>
-      <Text style={s.balance}>{formatEuros(g.currentAmount)} <Text style={s.target}>sur {formatEuros(g.targetAmount)}</Text></Text>
+      <AutoAmount maxFontSize={26} style={s.balance}>{formatEuros(g.currentAmount)}</AutoAmount><Text style={s.target}>sur {formatEuros(g.targetAmount)}</Text>
       <View accessibilityRole="progressbar" accessibilityLabel={`Progression de ${g.name}`} accessibilityValue={{min:0,max:g.targetAmount,now:Math.min(g.currentAmount,g.targetAmount),text:`${pct} %`}} style={s.track}><View style={[s.fill,{width:`${pct}%`}]}/></View>
       <Text style={s.muted}>{remaining>0?`Encore ${formatEuros(remaining)} pour atteindre ton objectif`:'Objectif atteint !'}</Text>
       <Pressable onPress={()=>onEditGoal({...g,depositOnly:true})} accessibilityLabel={`Ajouter de l’épargne à ${g.name}`} style={s.add}><Text style={s.addText}>+ Ajouter de l’épargne</Text></Pressable>

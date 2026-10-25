@@ -3,7 +3,8 @@ import { Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, Vi
 import { createClientUuid } from '../lib/ids';
 import { formatEuros } from '../lib/currency';
 import { colors } from '../theme/tokens';
-import { parseMoney, applyDeposit, notify } from '../lib/money';
+import { parseMoney, inputAmountFontSize, applyDeposit, notify } from '../lib/money';
+import { AutoAmount } from './AutoAmount';
 
 export function SavingsGoalModal({ goal, visible, onClose, onSave, onDelete }) {
   const [name,setName]=useState(''),[emoji,setEmoji]=useState('💰'),[target,setTarget]=useState(''),[current,setCurrent]=useState(''),[deposit,setDeposit]=useState('');
@@ -33,8 +34,8 @@ export function SavingsGoalModal({ goal, visible, onClose, onSave, onDelete }) {
         <Text style={s.label}>{goal?'Total déjà épargné':'Épargne de départ'} <Text style={s.hint}>({goal?'corriger le solde':'facultatif'})</Text></Text><TextInput accessibilityLabel="Épargne déjà enregistrée" inputMode="decimal" keyboardType="decimal-pad" value={current} onChangeText={setCurrent} placeholder="0" style={s.input} editable={!busy}/>
       </>}
       <Text style={[s.label,{marginTop:depositOnly?22:4}]}>{depositOnly?'Combien veux-tu ajouter ?':'Ajouter maintenant (facultatif)'}</Text>
-      <TextInput ref={depositOnly?input:undefined} accessibilityLabel="Montant à ajouter à l’épargne" inputMode="decimal" keyboardType="decimal-pad" value={deposit} onChangeText={v=>{setDeposit(v);setError('')}} placeholder="0,00" style={[s.input,depositOnly&&s.bigInput]} editable={!busy} onSubmitEditing={save} returnKeyType="done"/>
-      <View style={s.summary}><Text style={s.label}>Total après enregistrement</Text><Text style={s.total}>{total===null?'—':formatEuros(total)}</Text><Text style={s.hint}>Un ajout de 10 augmente immédiatement ton épargne de 10. Ce suivi ne réalise aucun virement bancaire.</Text></View>
+      <TextInput ref={depositOnly?input:undefined} accessibilityLabel="Montant à ajouter à l’épargne" inputMode="decimal" keyboardType="decimal-pad" value={deposit} onChangeText={v=>{setDeposit(v);setError('')}} placeholder="0,00" style={[s.input,depositOnly&&{fontSize:inputAmountFontSize(deposit,34)}]} editable={!busy} onSubmitEditing={save} returnKeyType="done"/>
+      <View style={s.summary}><Text style={s.label}>Total après enregistrement</Text><AutoAmount maxFontSize={30} style={s.total}>{total===null?'—':formatEuros(total)}</AutoAmount><Text style={s.hint}>Un ajout de 10 augmente immédiatement ton épargne de 10. Ce suivi ne réalise aucun virement bancaire.</Text></View>
       {error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
       {!depositOnly&&goal&&onDelete?<Pressable disabled={busy} style={{paddingVertical:14}} onPress={()=>onDelete(goal.id)}><Text style={{color:'#ad3434'}}>Supprimer cet objectif</Text></Pressable>:null}
     </ScrollView>

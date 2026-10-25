@@ -9,6 +9,10 @@ export function applyDeposit(goal, amount) {
   const round = value => Math.round((value + Number.EPSILON) * 100) / 100;
   return { ...goal, currentAmount: round(goal.currentAmount + amount), monthlyContribution: round(goal.monthlyContribution + amount) };
 }
+export function inputAmountFontSize(value, maximum = 38) {
+  const length = String(value ?? '').replace(/\s/g, '').length;
+  return Math.max(16, Math.min(maximum, Math.floor(maximum * 5 / Math.max(length, 5))));
+}
 export function notify(message) {
   if (typeof document === 'undefined') return;
   document.getElementById('kloo-save-feedback')?.remove();
