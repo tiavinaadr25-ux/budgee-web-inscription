@@ -50,3 +50,11 @@ Profil → Mode de paiement ouvre /paiement/gestion. Modifier ma carte utilise S
 Passer à Mobile Money arrête le renouvellement carte à la fin de la période. Le paiement Voaray reste bloqué tant que l’accès actuel est actif. La simulation est retirée. Le bouton Mobile Money ouvre le vrai paiement Voaray lorsque l’accès actuel est terminé. Les écrans du fournisseur et les opérateurs disponibles dépendent du compte marchand.
 
 Le fichier .env préexistant a été retiré du suivi Git. Ses anciennes valeurs restent dans l’historique : renouveler les clés privées concernées puis reporter les nouvelles valeurs dans Netlify et les services qui les utilisent.
+
+## Dépenses et épargne
+
+Les composants web éditables sont dans web-app/components et le calcul des montants dans web-app/lib/money.js. scripts/build-web-flows.cjs les compile contre les modules React Native déjà présents dans cet export Expo. scripts/enhance-web-app.cjs exécute cette étape et réapplique les raccordements. Si l’export change de structure ou de modules, le script s’arrête pour éviter de modifier un mauvais composant.
+
+Les formulaires attendent le résultat du stockage avant de se vider, gardent les champs en cas d’échec et verrouillent les doubles clics. Une addition d’épargne augmente currentAmount et monthlyContribution du même montant ; modifier un objectif sans nouveau versement ne compte pas le montant du mois une deuxième fois. Les anciens soldes ne sont pas recalculés automatiquement : Modifier → Total déjà épargné permet une correction explicite.
+
+Vérifications : tests/web-flows.cjs, neuf suites de tests de régression et contrôle des vrais composants dans un navigateur sur données fictives (50 + 10 = 60, progression 60 %, échec et reprise d’une dépense, double clic). Aucun compte client réel n’a été modifié pour ces tests.

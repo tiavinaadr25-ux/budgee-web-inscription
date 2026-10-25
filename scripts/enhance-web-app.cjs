@@ -1,8 +1,11 @@
+require('./build-web-flows.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const name = 'index-51b57ea0a19a6bf49f360ef6f56c6ba9.js';
 const patches = [
+ ["onSave:e=>{(async()=>{await on(e)&&(ut(null),Xe(!1))})()}","onSave:async e=>{const t=await on(e);return t&&(ut(null),Xe(!1)),t}"],
+ ["onSave:async e=>{await rn(e)&&(Be(!1),Yt('dashboard'))}","onSave:async e=>{const t=await rn(e);return t&&Be(!1),t}"],
  ["subscription:pe,onOpenWebsite:en,onLogout:un","subscription:pe,onOpenWebsite:()=>globalThis.location.assign(\"/paiement\"),onLogout:un"],
  ["visible:Ne,onClose:()=>Fe(!1),onOpenWebsite:en,onSetPrimary:","visible:Ne,onClose:()=>Fe(!1),onOpenWebsite:()=>globalThis.location.assign(\"/paiement/gestion\"),onSetPrimary:"],
  ["_e.exportDataAsCsv=async function(t){const n=r(t.monthKey)","_e.exportDataAsCsv=async function(t){if(typeof document!==\"undefined\"){if(typeof globalThis.KlooExport!==\"function\"){globalThis.alert(\"Actualise Kloo pour activer le téléchargement CSV.\");return}return globalThis.KlooExport(t,(0,a.getActiveCurrency)())}const n=r(t.monthKey)"],
