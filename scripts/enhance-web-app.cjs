@@ -4,6 +4,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const name = 'index-51b57ea0a19a6bf49f360ef6f56c6ba9.js';
 const patches = [
+ ["const e=(0,k.requireSupabase)(),{error:t}=await e.auth.signOut();","const e=(0,k.requireSupabase)();if(globalThis.KlooPush)await globalThis.KlooPush.detach(Et,e);const{error:t}=await e.auth.signOut();"],
+ ["onOpenNotifications:()=>$e(!0)","onOpenNotifications:()=>{if(globalThis.KlooPush){globalThis.KlooPush.open(Et,(0,k.requireSupabase)());return}$e(!0)}"],
  ["onSave:async e=>{try{Et&&await(0,_.upsertBudgetCategories)(Et,At,e),Se(e),Ke(!1),Yt('dashboard')}catch(e){o.default.alert('Budget non enregistr\\xe9',zt(e,\"On n\\u2019a pas r\\xe9ussi \\xe0 enregistrer les nouvelles enveloppes.\"))}}","onSave:async e=>{try{Et&&await(0,_.upsertBudgetCategories)(Et,At,e),Se(e),Ke(!1),Yt('dashboard');return!0}catch(e){o.default.alert('Budget non enregistr\\xe9',zt(e,\"On n\\u2019a pas r\\xe9ussi \\xe0 enregistrer les nouvelles enveloppes.\"));return!1}}"],
  ["onSave:e=>{(async()=>{await on(e)&&(ut(null),Xe(!1))})()}","onSave:async e=>{const t=await on(e);return t&&(ut(null),Xe(!1)),t}"],
  ["onSave:async e=>{await rn(e)&&(Be(!1),Yt('dashboard'))}","onSave:async e=>{const t=await rn(e);return t&&Be(!1),t}"],
@@ -13,7 +15,7 @@ const patches = [
  ["(0,x.jsx)(b,{Icon:f.CircleHelp,label:\"Aide & FAQ\",onPress:L})","(0,x.jsx)(b,{Icon:f.CreditCard,label:\"Mode de paiement\",onPress:()=>globalThis.location.assign(\"/paiement/gestion\")}),(0,x.jsx)(b,{Icon:f.CircleHelp,label:\"Aide & FAQ\",onPress:L})"],
  ["function Z(e){return e?","function Z(e){if(e&&'voaray'===e.provider)return e.currentPeriodEndAt&&new Date(e.currentPeriodEndAt).getTime()>Date.now()?'Accès Mobile Money actif':'Accès Mobile Money terminé';return e?"],
  ['function Vt(){nt(!0)}','function Vt(){if(globalThis.KlooGuide){globalThis.KlooGuide.open(Et);return}nt(!0)}'],
- ["st(!ne(Et))},[ce,Et,Ot])", "st(!ne(Et)),globalThis.KlooGuide&&globalThis.KlooGuide.welcome(Et)},[ce,Et,Ot])"],
+ ["st(!ne(Et))},[ce,Et,Ot])", "st(!ne(Et)),globalThis.KlooGuide&&globalThis.KlooGuide.welcome(Et),globalThis.KlooPush&&globalThis.KlooPush.syncAccount(Et,(0,k.requireSupabase)()).catch(()=>{})},[ce,Et,Ot])"],
 ];
 for(const base of ['public/_expo/static/js/web','public/app/_expo/static/js/web']){
  const file=path.join(root,base,name);let source=fs.readFileSync(file,'utf8');
@@ -24,4 +26,6 @@ for(const base of ['public/_expo/static/js/web','public/app/_expo/static/js/web'
 const index=path.join(root,'public/app/index.html');let html=fs.readFileSync(index,'utf8');
 if(!html.includes('/app/kloo-guide.js'))html=html.replace('<script src="/_expo/', '<script src="/app/kloo-guide.js" defer></script>\n  <script src="/_expo/');
 if(!html.includes('/app/kloo-export.js'))html=html.replace('<script src="/app/kloo-guide.js"', '<script src="/app/kloo-export.js" defer></script>\n  <script src="/app/kloo-guide.js"');
+if(!html.includes('/app/kloo-push.js'))html=html.replace('<script src="/app/kloo-guide.js"', '<script src="/app/kloo-push.js" defer></script>\n  <script src="/app/kloo-guide.js"');
+html=html.replace("navigator.serviceWorker.register('./sw.js')", "navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' })");
 fs.writeFileSync(index,html);console.log('Guide hooks applied to the web export.');

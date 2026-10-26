@@ -33,7 +33,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register('./sw.js').catch(function (error) {
+          navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' }).catch(function (error) {
             console.error('Kloo service worker registration failed:', error);
           });
         });
@@ -47,6 +47,7 @@
     <noscript>Active JavaScript pour utiliser Kloo.</noscript>
     <div id="root"></div>
   <script src="/app/kloo-export.js" defer></script>
+  <script src="/app/kloo-push.js" defer></script>
   <script src="/app/kloo-guide.js" defer></script>
   <script src="/_expo/static/js/web/index-51b57ea0a19a6bf49f360ef6f56c6ba9.js" defer></script>
 </body>

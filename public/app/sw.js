@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kloo-pwa-v9-touch-adaptive-amounts';
+const CACHE_NAME = 'kloo-pwa-v10-web-push';
 const getScopePath = () => {
   const scopeUrl = new URL(self.registration.scope);
   return scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : `${scopeUrl.pathname}/`;
@@ -21,6 +21,33 @@ self.addEventListener('install', (event) => {
       .then((cache) => cache.addAll(appShell))
       .then(() => self.skipWaiting()),
   );
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try { payload = event.data?.json() || {}; } catch {}
+  const title = typeof payload.title === 'string' ? payload.title.slice(0, 120) : 'Kloo';
+  const body = typeof payload.body === 'string' ? payload.body.slice(0, 500) : 'Ouvre Kloo pour consulter tes rappels.';
+  let target = '/app/';
+  try { const url = new URL(payload.url || target, self.location.origin); if (url.origin === self.location.origin && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) target = url.pathname + url.search; } catch {}
+  event.waitUntil(self.registration.showNotification(title, {
+    body, icon: '/app/icon-192.png', badge: '/app/icon-192.png',
+    tag: typeof payload.tag === 'string' ? payload.tag.slice(0, 100) : 'kloo-reminder',
+    data: { url: target }, renotify: false,
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  let target = new URL('/app/', self.location.origin);
+  try { const url = new URL(event.notification.data?.url || '/app/', self.location.origin); if (url.origin === self.location.origin && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) target = url; } catch {}
+  event.waitUntil(self.clients.matchAll({type: 'window', includeUncontrolled: true}).then(async (clients) => {
+    for (const client of clients) {
+      const url = new URL(client.url);
+      if (url.origin === target.origin && (url.pathname === '/app' || url.pathname.startsWith('/app/')) && 'focus' in client) return client.focus();
+    }
+    return self.clients.openWindow(target.href);
+  }));
 });
 
 self.addEventListener('activate', (event) => {
