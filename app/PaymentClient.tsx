@@ -57,6 +57,11 @@ function hasSubscriptionAccess(subscription: SubscriptionRow | null | undefined)
   return false;
 }
 
+function hasVoarayAccess(order: { status?: string; access_ends_at?: string | null }) {
+  return order.status === 'completed' && Boolean(order.access_ends_at
+    && new Date(order.access_ends_at).getTime() > Date.now());
+}
+
 function getSupabaseClient() {
   if (!supabase) {
     throw new Error(
@@ -412,7 +417,7 @@ export default function PaymentClient() {
             const result = await response.json();
             if (disposed) return;
             if (!response.ok) throw new Error(result.error || 'La vérification est temporairement indisponible.');
-            if (result.status === 'completed') {
+            if (hasVoarayAccess(result)) {
               setPageState('active');
               setMessage('Paiement Voaray confirmé. Ton mois d’accès Kloo est actif.');
               window.history.replaceState({}, '', '/paiement');
@@ -421,7 +426,7 @@ export default function PaymentClient() {
             if (result.status === 'sandbox_completed') {
               setPageState('payment'); setMessage('Paiement de test confirmé. Aucun accès réel n’a été activé.'); return;
             }
-            if (['failed', 'canceled', 'refunded', 'duplicate_payment'].includes(result.status)) {
+            if (['completed', 'failed', 'canceled', 'refunded', 'duplicate_payment'].includes(result.status)) {
               setPageState('payment'); setMessage(result.status === 'duplicate_payment' ? 'Un autre paiement a déjà été reçu pour cette période. Contacte le support pour vérifier ce paiement supplémentaire.' : 'Ce paiement n’a pas activé d’accès. Vérifie son état avant de réessayer, ou contacte le support.'); return;
             }
             await new Promise((resolve) => window.setTimeout(resolve, 1500));
@@ -531,6 +536,44 @@ export default function PaymentClient() {
     }
   }
 
+  async function handleSwitchAccount() {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await getSupabaseClient().auth.signOut({ scope: 'local' });
+      if (error) throw error;
+      setCurrentUser(null);
+      window.location.replace('/connexion');
+    } catch {
+      setMessage('Impossible de déconnecter cet appareil. Réessaie pour changer de compte.');
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleCheckMobilePayment() {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/voaray/status', { method: 'POST',
+        headers: await getAuthorizedJsonHeaders(), body: JSON.stringify({}) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Vérification indisponible.');
+      if (hasVoarayAccess(result)) {
+        setPageState('active');
+        setMessage('Paiement Voaray confirmé. Ton mois d’accès Kloo est actif.');
+      } else if (result.status === 'pending') {
+        setPageState('confirming');
+        setMessage('Kloo attend encore la confirmation de Voaray. Si tu as été débité, ne repaie pas : contacte le support avec ta référence de transaction.');
+      } else {
+        setMessage('Ce paiement n’a pas activé d’accès. Si tu as été débité, contacte le support avant de réessayer.');
+      }
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Vérification indisponible.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   const title =
     pageState === 'confirming' ? 'Confirmation du paiement' : pageState === 'loading' ? 'Vérification de ton accès' : pageState === 'active'
       ? 'Ton accès est actif'
@@ -555,9 +598,14 @@ export default function PaymentClient() {
         <h1 style={pageStyles.title}>{title}</h1>
         <p style={pageStyles.lead}>{lead}</p>
         <p style={pageStyles.info} role="status" aria-live="polite">{message}</p>
+        {currentUser && <div style={{ marginBottom: 20 }}>
+          <p style={pageStyles.footer}>Compte connecté : {currentUser.email}</p>
+          <button type="button" onClick={handleSwitchAccount} disabled={isSubmitting}
+            style={{ ...pageStyles.secondaryButton, width: 'auto' }}>Changer de compte</button>
+        </div>}
 
         {pageState === 'loading' ? <p>Vérification en cours…</p> : pageState === 'confirming' ? (
-          <div style={pageStyles.card}><p style={pageStyles.cardText}>Ton paiement est en cours de vérification. Tu pourras ouvrir Kloo dès sa confirmation.</p><button type="button" style={pageStyles.primaryButton} onClick={() => window.location.reload()}>Vérifier à nouveau</button><p style={pageStyles.footer}><a href="mailto:contact@kloo.site">Contacter le support</a></p></div>
+          <div style={pageStyles.card}><p style={pageStyles.cardText}>Ton paiement est en cours de vérification. Tu pourras ouvrir Kloo dès sa confirmation.</p><button type="button" disabled={isSubmitting} style={pageStyles.primaryButton} onClick={handleCheckMobilePayment}>Vérifier à nouveau</button><p style={pageStyles.footer}><a href="mailto:contact@kloo.site">Contacter le support</a></p></div>
         ) : pageState === 'guest' ? (
           <div style={pageStyles.grid}>
             <div style={pageStyles.card}>
@@ -637,6 +685,8 @@ export default function PaymentClient() {
                   {isSubmitting ? 'Ouverture du paiement…' : mobilePayment.available ? 'Payer avec Voaray' : 'Mobile Money bientôt disponible'}
                 </button>
                 <p style={pageStyles.footer}>{mobilePayment.sandbox ? 'Mode test : aucun accès réel ne sera activé.' : 'Ton mois d’accès commence après confirmation du paiement par Voaray.'}</p>
+                <button type="button" disabled={isSubmitting} onClick={handleCheckMobilePayment}
+                  style={pageStyles.secondaryButton}>J’ai déjà payé : vérifier mon accès</button>
               </div>
             </div>
           </>

@@ -11,7 +11,7 @@ Ajouter dans les variables Netlify, pour les builds et fonctions en production :
 - VOARAY_API_KEY
 - VOARAY_MERCHANT_KEY
 - VOARAY_API_SECRET
-- VOARAY_WEBHOOK_SECRET si le secret IPN est distinct du secret API
+- VOARAY_WEBHOOK_SECRET : secret IPN/webhook explicitement renseigné, même si le fournisseur utilise le même secret que l’API
 - VOARAY_ENVIRONMENT=production
 - VOARAY_PRICE_AMOUNT=9000
 - VOARAY_CURRENCY=MGA
@@ -25,10 +25,13 @@ Le prix de la carte reste fixé par STRIPE_PRICE_ID dans l’environnement de pr
 
 La migration `supabase/migrations/202610210001_voaray.sql` a déjà été exécutée pour ce projet et ses fonctions ont été vérifiées. Ne pas réinitialiser la base ni effacer les paiements existants.
 
+Pour la vérification automatique des paiements, exécuter aussi `supabase/migrations/202610300001_voaray_reconciliation.sql`. Elle ajoute deux colonnes privées et des index à `voaray_orders`. Aucun nouvel achat ne peut être ouvert tant que cette migration et le secret webhook ne sont pas configurés. Voir `docs/VOARAY-TROUBLESHOOTING.md`.
+
 ## Vérification après déploiement
 
 - L’accueil doit afficher la navigation simplifiée et le téléphone complet.
-- `/api/voaray/checkout` doit répondre en JSON avec un montant de 9000 et la devise MGA.
+- `/api/voaray/checkout` doit répondre en JSON avec `available: true`, un montant de 9000 et la devise MGA.
+- La fonction Netlify `voaray-reconcile` doit être programmée toutes les cinq minutes sur le site publié.
 - Voaray doit pouvoir envoyer ses notifications à `https://kloo.site/api/voaray/webhook`.
 - Conserver l’endpoint Stripe de production existant ; le code de la route Next se trouve à `/api/stripe-webhook`.
 - Tester le paiement sandbox avant de déclarer le parcours fournisseur complet validé. Aucun paiement réel n’a été déclenché pendant les vérifications automatiques.

@@ -9,7 +9,7 @@ export function voarayConfig() {
   const apiKey = process.env.VOARAY_API_KEY?.trim();
   const merchantKey = process.env.VOARAY_MERCHANT_KEY?.trim();
   const apiSecret = process.env.VOARAY_API_SECRET?.trim();
-  const webhookSecret = process.env.VOARAY_WEBHOOK_SECRET?.trim() || apiSecret;
+  const webhookSecret = process.env.VOARAY_WEBHOOK_SECRET?.trim();
   const siteUrl = process.env.SITE_URL?.trim();
   let publicSite = false;
   try {
@@ -35,8 +35,10 @@ export function signature(body: string, secret: string) {
 }
 
 export function validSignature(body: string, received: string | null, secret: string) {
-  if (!received || !/^[0-9a-f]{64}$/i.test(received)) return false;
-  return timingSafeEqual(Buffer.from(received, 'hex'), Buffer.from(signature(body, secret), 'hex'));
+  // Voaray documents both a bare digest and the Node.js sha256= form.
+  const digest = received?.trim().replace(/^sha256=/i, '');
+  if (!digest || !/^[0-9a-f]{64}$/i.test(digest)) return false;
+  return timingSafeEqual(Buffer.from(digest, 'hex'), Buffer.from(signature(body, secret), 'hex'));
 }
 
 export function accessIsActive(row: { status: string; trial_ends_at?: string | null; current_period_end_at?: string | null } | null) {
@@ -65,5 +67,10 @@ export async function initiateVoarayPayment(payload: Record<string, unknown>) {
   if (url.protocol !== 'https:' || !['app.voaray.com', 'checkout.voaray.com'].includes(url.hostname) || url.username || url.password) {
     throw new ApiRouteError('Le lien de paiement Voaray n’a pas pu être vérifié.', 502);
   }
-  return url.href;
+  const candidates = [data.trx_id, data.transaction_id, data.info?.trx_id,
+    data.info?.transaction_id, data.info?.ref_trx];
+  const transactionId = candidates.find(value => typeof value === 'string'
+    && /^(?:(?:SANDBOX|PRODUCTION)_)?TXN[A-Z0-9]{6,80}$/i.test(value));
+  if (!transactionId) throw new ApiRouteError('La référence Voaray n’a pas pu être enregistrée. Aucun paiement n’a été ouvert. Contacte le support.', 502);
+  return { url: url.href, transactionId: transactionId as string };
 }

@@ -789,6 +789,14 @@ export default function LandingClient({
       } else if (sessionData?.session) {
         setAuthModeState('login');
 
+        // An explicit visit to Connexion must allow different credentials.
+        // Email-confirmation callbacks still resume the account they confirmed.
+        if (variant === 'login' && !hasLoginAuthParams(authParams)) {
+          setShowAppActions(false);
+          setStatus('Saisis les identifiants du compte que tu souhaites utiliser.', 'info');
+          return;
+        }
+
         try {
           let currentSubscription = await fetchCurrentSubscription(
             sessionData.session.user.id,

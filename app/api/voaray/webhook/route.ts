@@ -13,9 +13,12 @@ export async function POST(request: NextRequest) {
     const payload = JSON.parse(body);
     const data = payload.data ?? {};
     if (data.environment !== config.environment || (request.headers.get('x-environment') && request.headers.get('x-environment') !== config.environment)) throw new ApiRouteError('Environnement invalide.', 400);
-    if (!/^[0-9a-f-]{36}$/i.test(String(data.ref_trx ?? ''))) throw new ApiRouteError('Référence invalide.', 400);
+    const reference = String(data.ref_trx ?? '');
+    const isOrderId = /^[0-9a-f-]{36}$/i.test(reference);
+    if (!isOrderId && !/^(?:(?:SANDBOX|PRODUCTION)_)?TXN[A-Z0-9]{6,80}$/i.test(reference)) throw new ApiRouteError('Référence invalide.', 400);
     const admin = voarayAdmin();
-    const order = await admin.from('voaray_orders').select('id, amount, currency, environment').eq('id', data.ref_trx).maybeSingle();
+    const order = await admin.from('voaray_orders').select('id, amount, currency, environment')
+      .eq(isOrderId ? 'id' : 'provider_trx_id', reference).eq('environment', config.environment).maybeSingle();
     if (order.error) throw new ApiRouteError('Stockage indisponible.', 503);
     if (!order.data) throw new ApiRouteError('Commande introuvable.', 404);
     if (order.data.environment !== data.environment || order.data.currency !== data.currency_code
@@ -24,7 +27,10 @@ export async function POST(request: NextRequest) {
     // Only signed, matched completion events can activate access. A browser redirect never does.
     if (['completed', 'terminé'].includes(status)) {
       const result = await admin.rpc('fulfill_voaray_order', { p_order_id: order.data.id });
-      if (result.error) throw new ApiRouteError('Activation à réessayer.', 503);
+      if (result.error) {
+        console.error('Voaray fulfillment failed', { orderId: order.data.id, code: result.error.code });
+        throw new ApiRouteError('Activation à réessayer.', 503);
+      }
     } else if (['refunded', 'partially_refunded'].includes(status)) {
       const result = await admin.rpc('refund_voaray_order', { p_order_id: order.data.id });
       if (result.error) throw new ApiRouteError('Mise à jour à réessayer.', 503);
@@ -35,6 +41,9 @@ export async function POST(request: NextRequest) {
     }
     return jsonResponse(request, { received: true });
   } catch (error) {
+    // Keep retry failures diagnosable without logging payloads, signatures or credentials.
+    console.warn('Voaray webhook rejected', { status: error instanceof ApiRouteError ? error.status : 400,
+      reason: error instanceof ApiRouteError ? error.message : 'Invalid payload' });
     return jsonResponse(request, { error: error instanceof ApiRouteError ? error.message : 'Notification invalide.' },
       { status: error instanceof ApiRouteError ? error.status : 400 });
   }
