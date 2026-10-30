@@ -1,4 +1,4 @@
-import { ApiRouteError } from './security';
+import { ApiRouteError } from './api-error';
 import { signature, voarayAdmin, voarayConfig } from './voaray';
 
 type Order = { id: string; user_id: string; provider_trx_id: string | null; amount: number;

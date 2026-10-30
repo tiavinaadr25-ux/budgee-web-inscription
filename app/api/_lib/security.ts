@@ -1,5 +1,7 @@
 import { createClient, type User } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { ApiRouteError } from './api-error';
+export { ApiRouteError } from './api-error';
 
 const supabaseUrl = process.env.SUPABASE_URL?.trim() ?? process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey =
@@ -12,15 +14,6 @@ const authClient =
         auth: { autoRefreshToken: false, persistSession: false },
       })
     : null;
-
-export class ApiRouteError extends Error {
-  status: number;
-
-  constructor(message: string, status = 500) {
-    super(message);
-    this.status = status;
-  }
-}
 
 function normalizeOrigin(value: string | null | undefined) {
   if (!value) {

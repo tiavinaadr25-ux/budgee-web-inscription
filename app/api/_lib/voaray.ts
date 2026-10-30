@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { ApiRouteError } from './security';
+import { ApiRouteError } from './api-error';
 
 export function voarayConfig() {
   const environment = process.env.VOARAY_ENVIRONMENT?.trim() || 'sandbox';
