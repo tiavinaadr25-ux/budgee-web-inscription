@@ -1,0 +1,7 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),{pathToFileURL}=require('node:url'),{spawnSync}=require('node:child_process'),esbuild=require('esbuild-wasm');
+(async()=>{const root=path.resolve(__dirname,'..'),scratch=path.join(root,'work');fs.mkdirSync(scratch,{recursive:true});const dir=fs.mkdtempSync(path.join(scratch,'email-smoke-')),outfile=path.join(dir,'lifecycle-emails.mjs');
+ try{const built=await esbuild.build({entryPoints:[path.join(root,'netlify/functions/lifecycle-emails.mts')],outfile,bundle:true,platform:'node',target:'node20',format:'esm',packages:'external',metafile:true,logLevel:'silent'});
+  assert.ok(!Object.values(built.metafile.outputs).flatMap(x=>x.imports).some(x=>x.path.startsWith('next/')));
+  const result=spawnSync(process.execPath,['--input-type=module','-e',`globalThis.fetch=()=>{throw Error('Unexpected live request')};const m=await import(${JSON.stringify(pathToFileURL(outfile).href)});if(m.config.schedule!=='*/5 * * * *')throw Error('Schedule missing');await m.default();`],{env:{...process.env,EMAIL_AUTOMATION_ENABLED:'false'},encoding:'utf8',timeout:15000});assert.equal(result.status,0,result.stderr);assert.match(result.stdout,/configured: false/);console.log('PASS lifecycle email scheduled ESM artifact starts and invokes without Next.js or any live email call');
+ }finally{if(fs.existsSync(outfile))fs.unlinkSync(outfile);fs.rmdirSync(dir)}
+})().catch(e=>{console.error(e);process.exitCode=1});
