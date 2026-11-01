@@ -11,12 +11,13 @@ export function emailConfiguration() {
  let origin='';try{const site=new URL(process.env.SITE_URL||'');if(site.protocol==='https:'&&!['localhost','127.0.0.1','[::1]'].includes(site.hostname))origin=site.origin}catch{}
  const enabled=process.env.EMAIL_AUTOMATION_ENABLED==='true';
  const senderEmail=process.env.BREVO_SENDER_EMAIL?.trim()||'';
+ const replyToEmail=process.env.BREVO_REPLY_TO_EMAIL?.trim()||senderEmail;
  const senderName=(process.env.BREVO_SENDER_NAME?.trim()||'Kloo').slice(0,80);
  const secret=process.env.EMAIL_UNSUBSCRIBE_SECRET?.trim()||'';
  const dailyLimit=Number(process.env.EMAIL_DAILY_LIMIT||100);
- const valid=Boolean(origin&&emailPattern.test(senderEmail)&&secret.length>=32
+ const valid=Boolean(origin&&emailPattern.test(senderEmail)&&emailPattern.test(replyToEmail)&&secret.length>=32
   &&Number.isInteger(dailyLimit)&&dailyLimit>=1&&dailyLimit<=1000);
- return {ready:enabled&&missing.length===0&&valid,enabled,missing,valid,origin,senderEmail,senderName,secret,dailyLimit};
+ return {ready:enabled&&missing.length===0&&valid,enabled,missing,valid,origin,senderEmail,senderName,replyToEmail,secret,dailyLimit};
 }
 export function emailDatabase() {
  return createClient((process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL)!,process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -74,7 +75,7 @@ export async function sendLifecycleEmail(job:EmailJob,admin=emailDatabase(),tran
   const response=await transport('https://api.brevo.com/v3/smtp/email',{
    method:'POST',headers:{Accept:'application/json','Content-Type':'application/json','api-key':process.env.BREVO_API_KEY!.trim()},
    body:JSON.stringify({sender:{name:config.senderName,email:config.senderEmail},to:[{email:job.recipient_email}],
-    replyTo:{email:config.senderEmail,name:config.senderName},subject:rendered.subject,htmlContent:rendered.html,textContent:rendered.text,
+    replyTo:{email:config.replyToEmail,name:config.senderName},subject:rendered.subject,htmlContent:rendered.html,textContent:rendered.text,
     headers:{idempotencyKey:job.id},tags:['kloo',job.kind]}),signal:AbortSignal.timeout(5000)});
   const body=await response.json().catch(()=>({}));
   const alreadyProcessed=body.code==='duplicate_parameter'&&/idempotenc/i.test(String(body.message||''));

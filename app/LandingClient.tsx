@@ -706,6 +706,15 @@ export default function LandingClient({
       const authRedirectPath = getAuthRedirectPath(authParams);
       const checkoutSessionId = searchParams.get('session_id');
 
+      // Older installed shortcuts still launch the marketing page. Keep their
+      // identity while opening the app, which restores its own saved session.
+      const installed = window.matchMedia?.('(display-mode: standalone)').matches ||
+        (window.navigator as (Navigator & { standalone?: boolean }) | undefined)?.standalone === true;
+      if (isFullLanding && installed && !authRedirectPath && !searchParams.toString() && !window.location.hash) {
+        window.location.replace('/app/');
+        return;
+      }
+
       if (
         isFullLanding &&
         authRedirectPath &&

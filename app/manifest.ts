@@ -6,7 +6,9 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Kloo',
     description:
       "Kloo t'aide à suivre ton budget étudiant et à garder ton essai sous la main depuis l’écran d’accueil.",
-    start_url: '/',
+    id: '/',
+    start_url: '/app/',
+    scope: '/',
     display: 'standalone',
     background_color: '#f4ede0',
     theme_color: '#2558a0',

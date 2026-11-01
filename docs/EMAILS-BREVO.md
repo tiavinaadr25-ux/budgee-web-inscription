@@ -18,6 +18,7 @@ Les modèles HTML et texte sont dans `server/lifecycle-emails.ts`. Les liens ren
    - `BREVO_API_KEY` ;
    - `BREVO_SENDER_EMAIL` ;
    - `BREVO_SENDER_NAME=Kloo` ;
+   - `BREVO_REPLY_TO_EMAIL=contact@kloo.site` : boîte Zimbra qui reçoit les réponses, indépendante de l’expéditeur. Cette option ne remplace pas la validation de l’expéditeur et de son domaine d’envoi dans Brevo ;
    - `EMAIL_UNSUBSCRIBE_SECRET` : secret aléatoire d’au moins 32 caractères, fourni au propriétaire dans le fichier de configuration privé ; conserver sa valeur dans le temps ;
    - `EMAIL_DAILY_LIMIT=100` : plafond global sur 24 heures, à adapter au forfait et au volume souhaité (1 à 1000).
 5. Exécuter `supabase/migrations/202611010001_lifecycle_emails.sql` dans Supabase SQL Editor. Il n’envoie aucun email et ne modifie aucun abonnement.
