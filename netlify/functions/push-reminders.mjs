@@ -1,3 +1,7 @@
+// Keep runtime dependencies visible to Netlify's ESM file tracer. The shared
+// CommonJS worker's require() calls become dynamic during its transpilation.
+import '@supabase/supabase-js';
+import 'web-push';
 import push from '../../server/web-push.cjs';
 export default async () => {
   const result=await push.runScheduledPush();

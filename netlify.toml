@@ -12,6 +12,11 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+[functions."push-reminders"]
+  # The shared CommonJS worker keeps runtime require() calls in the ESM bundle.
+  # Ship these packages and their dependencies alongside the scheduled function.
+  external_node_modules = ["@supabase/supabase-js", "web-push"]
+
 [[headers]]
   for = "/*"
   [headers.values]
