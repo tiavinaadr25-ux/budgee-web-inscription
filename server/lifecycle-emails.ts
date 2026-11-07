@@ -1,7 +1,8 @@
+import { lifecycleTemplates } from './lifecycle-email-templates';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-export type EmailKind = 'welcome' | 'trial_expired' | 'mobile_confirmed' | 'mobile_expiring' | 'mobile_expired';
+export type EmailKind = 'welcome' | 'check_in' | 'trial_expired' | 'mobile_confirmed' | 'mobile_expiring' | 'mobile_expired';
 type EmailJob = { id: string; user_id: string; kind: EmailKind; recipient_email: string; payload: Record<string, unknown> };
 const emailPattern = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 export function emailConfiguration() {
@@ -34,34 +35,26 @@ export function validUnsubscribeToken(userId:string,token:string) {
 const entities:Record<string,string>={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
 const escape=(text:unknown)=>String(text??'').replace(/[&<>"']/g,c=>entities[c]);
 export function renderLifecycleEmail(kind:EmailKind,payload:Record<string,unknown>,origin:string,unsubscribe:string) {
+ const template=lifecycleTemplates[kind];if(!template)throw Error('Unknown email type');
  const name=String(payload.name||'').trim().split(/\s+/)[0].slice(0,60);
- const greeting=name?'Bonjour '+name+',':'Bonjour,';
- let end='';if(payload.access_ends_at){const date=new Date(String(payload.access_ends_at));if(Number.isFinite(date.getTime()))end=new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeZone:'Indian/Antananarivo'}).format(date)}
- const content:Record<EmailKind,{subject:string;title:string;paragraphs:string[];cta:string;path:string}>={
-  welcome:{subject:'Bienvenue sur Kloo',title:'Un premier pas pour ton budget',paragraphs:[greeting,
-   'Ton compte Kloo est prêt. Commence simplement : fixe ton budget, note ta première dépense, puis choisis un objectif d’épargne.',
-   'Ton essai de 7 jours est sans carte. Tu peux retrouver l’état de ton accès dans l’application.'],cta:'Ouvrir Kloo',path:'/connexion'},
-  trial_expired:{subject:'Ton essai Kloo est terminé',title:'Continue à suivre ton budget',paragraphs:[greeting,
-   'Ton essai gratuit est terminé. Si tu souhaites continuer, choisis ton moyen de paiement depuis Kloo : 1,99 € par mois par carte, ou 9 000 Ar pour un mois par Mobile Money.',
-   'Aucun paiement n’est prélevé automatiquement à la fin de l’essai. Reconnecte-toi avec ton compte habituel.'],cta:'Choisir mon paiement',path:'/paiement'},
-  mobile_confirmed:{subject:'Ton paiement Mobile Money est confirmé',title:'Ton accès Kloo est actif',paragraphs:[greeting,
-   'Voaray a confirmé ton paiement Mobile Money.'+(end?' Ton accès est actif jusqu’au '+end+'.':''),
-   'Ce paiement est ponctuel, sans renouvellement automatique. Tu peux maintenant reprendre ton budget.'],cta:'Retrouver mon budget',path:'/connexion'},
-  mobile_expiring:{subject:'Ton accès Mobile Money se termine bientôt',title:'Ton mois Kloo arrive à sa fin',paragraphs:[greeting,
-   'Ton accès payé par Mobile Money se termine'+(end?' le '+end:' bientôt')+'. Aucun prélèvement automatique n’est prévu.',
-   'Si tu souhaites continuer, tu pourras renouveler ton accès depuis Kloo à son échéance.'],cta:'Voir mon accès',path:'/paiement'},
-  mobile_expired:{subject:'Ton accès Mobile Money est terminé',title:'Reprends Kloo quand tu veux',paragraphs:[greeting,
-   'Ton mois d’accès payé par Mobile Money est terminé. Pour continuer, reconnecte-toi au même compte et choisis ton paiement.',
-   'Un mois par Mobile Money coûte 9 000 Ar, sans renouvellement automatique. Si tu as déjà payé, utilise « J’ai déjà payé : vérifier mon accès » sans payer à nouveau.'],cta:'Renouveler mon accès',path:'/paiement'},
- };
- const item=content[kind];if(!item)throw Error('Unknown email type');
- const url=origin+item.path;
- const text=item.title+'\n\n'+item.paragraphs.join('\n\n')+'\n\n'+item.cta+' : '+url
-  +'\n\nUne question ? Réponds à cet email.\nNe plus recevoir ces emails automatiques : '+unsubscribe;
- const html='<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#f5f7fa;font-family:Arial,sans-serif;color:#18202d"><table role="presentation" style="width:100%;padding:30px 12px"><tr><td align="center"><table role="presentation" style="max-width:560px;width:100%;background:#fff;border-radius:18px;padding:32px"><tr><td><p style="color:#2558a0;font-size:22px;margin:0 0 24px">Kloo</p><h1 style="font-size:25px;font-weight:500;line-height:1.3">'+escape(item.title)+'</h1>'
-  +item.paragraphs.map(p=>'<p style="font-size:16px;line-height:1.7">'+escape(p)+'</p>').join('')
-  +'<p style="margin:28px 0"><a href="'+escape(url)+'" style="display:inline-block;background:#2558a0;color:#fff;padding:14px 22px;border-radius:10px;text-decoration:none">'+escape(item.cta)+'</a></p><p style="font-size:14px;line-height:1.7">Une question ? Réponds à cet email.</p><p style="font-size:12px;color:#687385;line-height:1.7">Cet email concerne ton compte Kloo. <a style="color:#687385" href="'+escape(unsubscribe)+'">Ne plus recevoir ces emails automatiques</a></p></td></tr></table></td></tr></table></body></html>';
- return {subject:item.subject,text,html};
+ let date='';if(payload.access_ends_at){const d=new Date(String(payload.access_ends_at));if(Number.isFinite(d.getTime()))date=new Intl.DateTimeFormat('fr-FR',{dateStyle:'long',timeZone:'Indian/Antananarivo'}).format(d)}
+ const html=String(template.html)
+  .replace('{% if params.FIRSTNAME %}Bonjour {{ params.FIRSTNAME }},{% else %}Bonjour,{% endif %}',name?'Bonjour '+escape(name)+',':'Bonjour,')
+  .replaceAll('{% if params.ACCESS_ENDS_AT %}le {{ params.ACCESS_ENDS_AT }}{% else %}à la date indiquée dans ton compte{% endif %}',date?'le '+escape(date):'à la date indiquée dans ton compte')
+  .replaceAll('https://kloo.site',escape(origin))
+  .replaceAll('{{ params.UNSUBSCRIBE_URL }}',escape(unsubscribe));
+ const text=html.replace(/<head[\s\S]*?<\/head>/i,'').replace(/<!--[\s\S]*?-->/g,'')
+  .replace(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi,'$2 : $1')
+  .replace(/<br\s*\/?\s*>|<\/(?:p|h1|td)>/gi,'\n').replace(/<[^>]+>/g,'')
+  .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&nbsp;/g,' ')
+  .replace(/[ \t]+/g,' ').replace(/\n\s*\n/g,'\n\n').trim();
+ return {subject:template.subject,text,html};
+}
+export async function emailRolloutReady(admin=emailDatabase()) {
+ const result=await admin.from('lifecycle_email_settings').select('rollout_version,welcome_since,other_since').eq('singleton',true).maybeSingle();
+ return !result.error&&result.data?.rollout_version===2&&
+  Date.parse(result.data.welcome_since)===Date.parse('2026-11-06T23:00:00Z')&&
+  Date.parse(result.data.other_since)===Date.parse('2026-10-22T22:00:00Z');
 }
 export async function sendLifecycleEmail(job:EmailJob,admin=emailDatabase(),transport:typeof fetch=fetch) {
  const config=emailConfiguration();if(!config.ready)return 'disabled';
@@ -97,6 +90,7 @@ export async function sendLifecycleEmail(job:EmailJob,admin=emailDatabase(),tran
 export async function runLifecycleEmails() {
  const config=emailConfiguration();if(!config.ready)return {configured:false,enabled:config.enabled};
  const admin=emailDatabase();
+ if(!await emailRolloutReady(admin))return {configured:false,enabled:config.enabled,awaitingAudienceMigration:true};
  const collected=await admin.rpc('collect_lifecycle_emails');if(collected.error)throw Error('Apply the lifecycle email SQL migration');
  const claimed=await admin.rpc('claim_lifecycle_emails',{p_daily_limit:config.dailyLimit});if(claimed.error)throw Error('Email queue unavailable');
  const results=await Promise.all((claimed.data||[]).map(async (job:EmailJob)=>{try{return await sendLifecycleEmail(job,admin)}catch{return 'error'}}));

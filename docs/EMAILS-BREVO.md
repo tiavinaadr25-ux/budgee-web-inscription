@@ -2,11 +2,13 @@
 
 ## Contenu et audience
 
-- Bienvenue : comptes confirmés créés dans les sept jours précédant l’installation SQL, puis toutes les inscriptions suivantes. La borne est conservée dans `lifecycle_email_settings`, même si le script est relancé.
-- Fin d’essai : dernier abonnement dont l’essai est terminé depuis cette même borne, sans accès actif. Aucun message de fin d’essai n’est envoyé à un compte dont le dernier accès est déjà payé et actif.
+- Bienvenue : uniquement les comptes créés depuis le 7 novembre 2026 à 00 h, heure de Paris, après confirmation de leur adresse email. Aucun rattrapage des inscriptions précédentes.
+- Suivi J+3 : même audience que le bienvenue, une seule fois, au moins 72 heures après confirmation de l’adresse. Le plafond d’un email de suivi par 24 heures peut différer l’envoi.
+- Fin d’essai et Mobile Money : uniquement les comptes créés depuis le 23 octobre 2026 à 00 h, heure de Paris (quinze jours avant le lancement), puis les inscriptions suivantes. Cette borne est fixe, pas une fenêtre glissante qui exclurait les clients plus tard. Les messages sont envoyés seulement lorsque l’événement correspondant est pertinent.
+- Fin d’essai : dernier abonnement dont l’essai est terminé depuis cette borne, sans accès actif. Aucun message de fin d’essai n’est envoyé à un compte dont le dernier accès est déjà payé et actif.
 - Mobile Money : confirmation d’une commande de production `completed` avec accès valide et commande récente ; rappel dans les 24 heures précédant la fin de l’accès courant ; avis après son expiration récente. Les commandes sandbox, en attente, échouées, remboursées ou doublonnées ne constituent pas des confirmations de paiement.
 
-Les modèles HTML et texte sont dans `server/lifecycle-emails.ts`. Les liens renvoient vers le compte existant ; ils ne créent ni accès, ni essai supplémentaire, ni paiement. Les dates des accès Mobile Money sont affichées dans le fuseau Madagascar. Les noms sont échappés avant affichage.
+Les six HTML validés sont intégrés dans `server/lifecycle-email-templates.ts` ; le rendu et sa version texte sont dans `server/lifecycle-emails.ts`. Brevo reçoit directement le contenu : aucun identifiant de modèle Brevo n’est nécessaire. Les liens renvoient vers le compte existant ; ils ne créent ni accès, ni essai supplémentaire, ni paiement. Les dates des accès Mobile Money sont affichées dans le fuseau Madagascar. Les noms sont échappés avant affichage.
 
 ## Installation
 
@@ -21,9 +23,9 @@ Les modèles HTML et texte sont dans `server/lifecycle-emails.ts`. Les liens ren
    - `BREVO_REPLY_TO_EMAIL=contact@kloo.site` : boîte Zimbra qui reçoit les réponses, indépendante de l’expéditeur. Cette option ne remplace pas la validation de l’expéditeur et de son domaine d’envoi dans Brevo ;
    - `EMAIL_UNSUBSCRIBE_SECRET` : secret aléatoire d’au moins 32 caractères, fourni au propriétaire dans le fichier de configuration privé ; conserver sa valeur dans le temps ;
    - `EMAIL_DAILY_LIMIT=100` : plafond global sur 24 heures, à adapter au forfait et au volume souhaité (1 à 1000).
-5. Exécuter `supabase/migrations/202611010001_lifecycle_emails.sql` dans Supabase SQL Editor. Il n’envoie aucun email et ne modifie aucun abonnement.
+5. Exécuter `supabase/migrations/202611010001_lifecycle_emails.sql` puis `supabase/migrations/202611070001_email_rollout.sql` dans Supabase SQL Editor. Le second est aussi nécessaire sur une installation existante : il ajoute le suivi J+3, fixe les deux audiences et annule les anciens messages en attente hors audience. Aucun email n’est envoyé par ces scripts et aucun abonnement n’est modifié. Le code refuse de traiter la file tant que la version et les dates de cette migration ne sont pas installées.
 6. Déployer le code. `/api/emails/status` affiche la disponibilité, sans données de destinataires. Vérifier les modèles puis valider un envoi de test vers sa propre adresse avec Brevo avant l’ouverture aux clients.
-7. Quand l’expéditeur et l’envoi sont vérifiés, passer `EMAIL_AUTOMATION_ENABLED=true` et redéployer. La fonction `lifecycle-emails` doit être affichée comme Scheduled dans Netlify. Elle collecte et traite automatiquement les événements toutes les cinq minutes, y compris le rattrapage des inscriptions récentes.
+7. Quand l’expéditeur et l’envoi sont vérifiés, passer `EMAIL_AUTOMATION_ENABLED=true` et redéployer. La fonction `lifecycle-emails` doit être affichée comme Scheduled dans Netlify. Elle collecte et traite automatiquement les événements toutes les cinq minutes, selon les deux audiences fixes approuvées.
 
 Les variables Stripe, Voaray, Web Push et les emails de sécurité Supabase restent indépendants de ce service. Les emails de confirmation d’adresse continuent de fonctionner comme avant ; le bienvenue Kloo est envoyé après confirmation.
 
@@ -33,7 +35,7 @@ La file privée garde une clé unique par événement et destinataire, et des ba
 
 Le statut `sent` signifie **accepté par Brevo**, pas réception prouvée dans la boîte du destinataire. Les rejets, blocages ou spams se contrôlent dans les journaux Brevo. Les logs Netlify n’affichent que des compteurs, sans adresses, contenus ni clés.
 
-Hors confirmations de paiements distincts, au plus un email de suivi par compte est envoyé sur 24 heures. Les relances sont revérifiées juste avant envoi ; un compte renouvelé, supprimé ou désinscrit n’est pas relancé. Le lien de désinscription signé demande un clic de confirmation : un scanner de liens qui visite la page ne désinscrit pas la personne. Il arrête les cinq types d’emails automatiques, sans toucher aux emails de sécurité/connexion Supabase.
+Hors confirmations de paiements distincts, au plus un email de suivi par compte est envoyé sur 24 heures. Les relances sont revérifiées juste avant envoi ; un compte renouvelé, supprimé ou désinscrit n’est pas relancé. Le lien de désinscription signé demande un clic de confirmation : un scanner de liens qui visite la page ne désinscrit pas la personne. Il arrête les six types d’emails automatiques, sans toucher aux emails de sécurité/connexion Supabase.
 
 ## Tests
 

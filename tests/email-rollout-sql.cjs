@@ -1,0 +1,40 @@
+// Run with @electric-sql/pglite available in NODE_PATH (isolated PostgreSQL).
+const {PGlite}=require('@electric-sql/pglite');
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const uuid=n=>'10000000-0000-4000-8000-'+String(n).padStart(12,'0');
+(async()=>{const db=new PGlite();try{
+await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,created_at timestamptz,deleted_at timestamptz);
+create table profiles(id uuid primary key,full_name text);
+create table subscriptions(id uuid primary key,user_id uuid,provider text,status text,trial_ends_at timestamptz,current_period_end_at timestamptz,created_at timestamptz);
+create table voaray_orders(id uuid primary key,user_id uuid,subscription_id uuid,environment text,status text,access_ends_at timestamptz,amount numeric,currency text,created_at timestamptz);`);
+const folder=path.join(__dirname,'../supabase/migrations');
+await db.exec(fs.readFileSync(path.join(folder,'202611010001_lifecycle_emails.sql'),'utf8'));
+const users=[['2026-11-06T22:59:59Z','2026-11-06T23:00:00Z'],['2026-11-06T23:00:00Z','2026-11-07T11:00:00Z'],['2026-10-22T21:59:59Z','2026-10-23T00:00:00Z'],['2026-10-22T22:00:00Z','2026-10-23T00:00:00Z'],['2026-11-07T10:00:00Z',null],['2026-11-07T10:00:00Z','2026-11-09T10:00:00Z']];
+for(let i=0;i<users.length;i++){await db.query('insert into auth.users values($1,$2,$3,$4,null)',[uuid(i+1),'fixture'+i+'@example.test',users[i][1],users[i][0]]);await db.query('insert into profiles values($1,$2)',[uuid(i+1),'Personne']);}
+await db.query("insert into lifecycle_email_outbox(user_id,recipient_email,event_key,kind) values($1,'fixture0@example.test',$2,'welcome')",[uuid(1),'welcome:'+uuid(1)]);
+for(const n of [1,3,4])await db.query("insert into subscriptions values($1,$2,'stripe','canceled','2026-11-08T10:00:00Z',null,'2026-11-01T10:00:00Z')",[uuid(100+n),uuid(n)]);
+const migration=fs.readFileSync(path.join(folder,'202611070001_email_rollout.sql'),'utf8');
+const at=time=>migration.replace(/\bnow\(\)/g,"'"+time+"'::timestamptz");
+await db.exec(at('2026-11-10T10:59:59Z'));await db.query('select collect_lifecycle_emails()');
+let rows=(await db.query('select * from lifecycle_email_outbox')).rows;
+assert.equal(rows.find(r=>r.event_key==='welcome:'+uuid(1)).status,'canceled');
+assert.ok(rows.some(r=>r.user_id===uuid(2)&&r.kind==='welcome'));
+assert.ok(!rows.some(r=>r.user_id===uuid(2)&&r.kind==='check_in'));
+assert.ok(!rows.some(r=>r.user_id===uuid(3)));
+assert.ok(rows.some(r=>r.user_id===uuid(4)&&r.kind==='trial_expired'));
+assert.ok(!rows.some(r=>r.user_id===uuid(5)));
+console.log('PASS Paris signup boundaries, 15-day audience, stale welcome cancellation and unconfirmed exclusion');
+await db.exec(at('2026-11-10T11:00:00Z'));await db.query('select collect_lifecycle_emails()');
+rows=(await db.query('select * from lifecycle_email_outbox')).rows;
+assert.equal(rows.filter(r=>r.user_id===uuid(2)&&r.kind==='check_in').length,1);
+assert.ok(!rows.some(r=>r.user_id===uuid(6)&&r.kind==='check_in'));
+assert.equal((await db.query('select collect_lifecycle_emails() n')).rows[0].n,0);
+await db.query('insert into lifecycle_email_preferences(user_id,enabled) values($1,false)',[uuid(2)]);
+const check=rows.find(r=>r.user_id===uuid(2)&&r.kind==='check_in');
+assert.equal((await db.query('select lifecycle_email_is_relevant($1) v',[check.id])).rows[0].v,false);
+const settings=(await db.query('select welcome_since,other_since,rollout_version from lifecycle_email_settings')).rows[0];
+assert.equal(new Date(settings.welcome_since).toISOString(),'2026-11-06T23:00:00.000Z');
+assert.equal(new Date(settings.other_since).toISOString(),'2026-10-22T22:00:00.000Z');assert.equal(settings.rollout_version,2);
+console.log('PASS J+3 begins exactly 72 hours after confirmation, never duplicates, respects opt-out, and rerunning SQL keeps fixed dates');
+}finally{await db.close()}})().catch(e=>{console.error(e);process.exitCode=1});
