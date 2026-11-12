@@ -33,6 +33,14 @@ Les variables Stripe, Voaray, Web Push et les emails de sécurité Supabase rest
 
 ### Relance ponctuelle validée du 12 novembre 2026
 
+**Remplacée à la demande du propriétaire par une relance automatique après essai.** Exécuter désormais `202611120002_automatic_trial_followup.sql`, même si la migration ponctuelle précédente n’a pas été exécutée. Ne plus lancer le SQL de campagne ponctuelle.
+
+Le contenu validé est réutilisé une fois, à partir de 48 heures après la fin de l’essai, uniquement sans conversion payante (ni facture payée de montant positif, ni commande Voaray de production confirmée), sans accès actif et sans désinscription. Ces exclusions s’appliquent aussi aux autres comptes portant la même adresse. L’identifiant d’événement déduplique par adresse. Le contrôle est refait avant envoi et les plafonds habituels restent applicables.
+
+Une colonne dans les réglages existants mémorise le démarrage : seules les échéances J+2 à partir de cette date sont incluses, sans rattrapage des vieux essais. Relancer le SQL conserve cette date. Les campagnes ponctuelles encore en attente sont annulées ; un message déjà envoyé ne peut pas être rappelé et bloque une deuxième relance de même contenu. Le collecteur existant assure l’automatisation ; aucune nouvelle table ni nouvelle tâche planifiée.
+
+`/api/emails/status` expose `automations.trialFollowupAfter48h` une fois les réglages installés.
+
 Le type `reengagement` utilise le HTML validé « Tu avais fait le premier pas. Et si tu continuais ? 🌱 ». Après déploiement, exécuter `supabase/migrations/202611120001_reengagement_campaign.sql` pour mettre en file les anciens abonnés non renouvelés et les essais terminés, sans limite d’ancienneté. Ce n’est pas un nouvel envoi récurrent : le collecteur habituel n’ajoute pas de relances de ce type.
 
 Le script sélectionne une fois l’audience éligible, déduplique les adresses et les relancements du script, exclut les comptes non confirmés, supprimés, désinscrits ou disposant d’un accès actif, y compris lorsqu’un autre compte avec la même adresse est actif ou désinscrit. Le statut est revérifié avant envoi. Il réutilise la file et ses plafonds, sans ajouter de table. Exécuter ce script uniquement après publication du nouveau code ; les versions précédentes ne connaissent pas ce type d’email.

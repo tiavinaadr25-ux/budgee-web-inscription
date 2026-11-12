@@ -1,4 +1,4 @@
 import {emailConfiguration,emailDatabase,emailRolloutReady} from '../../../../server/lifecycle-emails';
 export const runtime='nodejs';export const dynamic='force-dynamic';
-export async function GET(){const c=emailConfiguration();let storageReady=false;if(c.missing.length===0&&c.valid){try{storageReady=await emailRolloutReady(emailDatabase())}catch{}}
- return Response.json({available:c.ready&&storageReady,enabled:c.enabled,campaigns:['budget-2026-11-12'],configuration:{missing:c.missing,valid:c.valid,storageReady}},{headers:{'Cache-Control':'no-store'}})}
+export async function GET(){const c=emailConfiguration();let storageReady=false,trialFollowupReady=false;if(c.missing.length===0&&c.valid){try{const db=emailDatabase();storageReady=await emailRolloutReady(db);const settings=await db.from('lifecycle_email_settings').select('trial_followup_started_at').eq('singleton',true).maybeSingle();trialFollowupReady=!settings.error&&Boolean(settings.data?.trial_followup_started_at)}catch{}}
+ return Response.json({available:c.ready&&storageReady,enabled:c.enabled,automations:{trialFollowupAfter48h:trialFollowupReady},configuration:{missing:c.missing,valid:c.valid,storageReady}},{headers:{'Cache-Control':'no-store'}})}
