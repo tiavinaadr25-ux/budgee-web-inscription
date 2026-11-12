@@ -33,6 +33,10 @@ Les variables Stripe, Voaray, Web Push et les emails de sécurité Supabase rest
 
 ### Relance ponctuelle validée du 12 novembre 2026
 
+**Réglage final approuvé : les deux parcours ensemble.** Utiliser `202611120003_combined_reengagement.sql`, qui installe l’envoi ponctuel historique ET le suivi des futurs essais à J+2, même si les migrations intermédiaires n’ont pas été exécutées. La première exécution mémorise la date de lancement du rattrapage ; les suivantes ne sélectionnent pas de nouveaux anciens comptes. Les messages déjà en attente, envoyés ou incertains bloquent une deuxième mise en file du même contenu à la même adresse. Les éventuels doublons en attente issus des configurations précédentes sont annulés. Les règles de paiement sont différentes et conservées : l’envoi historique inclut les anciens abonnés payants expirés ; le suivi automatique est réservé aux essais sans conversion payante.
+
+Les paragraphes suivants décrivent les configurations intermédiaires, remplacées par ce réglage combiné.
+
 **Remplacée à la demande du propriétaire par une relance automatique après essai.** Exécuter désormais `202611120002_automatic_trial_followup.sql`, même si la migration ponctuelle précédente n’a pas été exécutée. Ne plus lancer le SQL de campagne ponctuelle.
 
 Le contenu validé est réutilisé une fois, à partir de 48 heures après la fin de l’essai, uniquement sans conversion payante (ni facture payée de montant positif, ni commande Voaray de production confirmée), sans accès actif et sans désinscription. Ces exclusions s’appliquent aussi aux autres comptes portant la même adresse. L’identifiant d’événement déduplique par adresse. Le contrôle est refait avant envoi et les plafonds habituels restent applicables.
