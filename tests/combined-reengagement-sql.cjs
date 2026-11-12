@@ -27,6 +27,15 @@ for(const n of [12,14])await db.query("insert into lifecycle_email_outbox(user_i
 const combined=fs.readFileSync(path.join(dir,'202611120003_combined_reengagement.sql'),'utf8');
 const at=t=>combined.replace(/\bnow\(\)/g,"'"+t+"'::timestamptz");
 await db.exec(at('2026-11-12T12:00:00Z'));
+for(const table of ['lifecycle_email_settings','lifecycle_email_preferences','lifecycle_email_outbox']){
+assert.equal((await db.query("select relrowsecurity from pg_class where oid=$1::regclass",['public.'+table])).rows[0].relrowsecurity,true);
+for(const role of ['anon','authenticated']){
+const privileges=(await db.query("select has_table_privilege($1,$2,'SELECT') as read,has_table_privilege($1,$2,'INSERT') as write",[role,'public.'+table])).rows[0];
+assert.equal(privileges.read,false);assert.equal(privileges.write,false);
+}
+assert.equal((await db.query("select has_table_privilege('service_role',$1,'SELECT') as read",['public.'+table])).rows[0].read,true);
+}
+console.log('PASS all email tables enforce RLS and deny anonymous/authenticated reads and writes; service role retains access');
 let rows=(await db.query("select * from lifecycle_email_outbox where kind='reengagement'")).rows;
 assert.equal(rows.length,8);assert.equal(rows.filter(r=>r.status==='pending').length,7);
 assert.ok(rows.some(r=>r.user_id===id(4)&&r.status==='pending'));assert.ok(rows.some(r=>r.user_id===id(5)&&r.status==='pending'));

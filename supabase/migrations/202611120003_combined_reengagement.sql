@@ -1,6 +1,12 @@
 -- Approved combination: one historical snapshot + future trial follow-up at 48h.
 -- Reuses the existing queue. Safe to rerun; no new table, no manual Brevo campaign.
 begin;
+-- Explicitly keep email tables private, including on an existing installation.
+alter table public.lifecycle_email_settings enable row level security;
+alter table public.lifecycle_email_preferences enable row level security;
+alter table public.lifecycle_email_outbox enable row level security;
+revoke all on public.lifecycle_email_settings,public.lifecycle_email_preferences,public.lifecycle_email_outbox from public,anon,authenticated;
+grant all on public.lifecycle_email_settings,public.lifecycle_email_preferences,public.lifecycle_email_outbox to service_role;
 
 alter table public.lifecycle_email_settings add column if not exists trial_followup_started_at timestamptz;
 update public.lifecycle_email_settings set trial_followup_started_at=now() where singleton and trial_followup_started_at is null;
