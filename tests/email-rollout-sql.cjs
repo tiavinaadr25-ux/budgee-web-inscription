@@ -37,4 +37,25 @@ const settings=(await db.query('select welcome_since,other_since,rollout_version
 assert.equal(new Date(settings.welcome_since).toISOString(),'2026-11-06T23:00:00.000Z');
 assert.equal(new Date(settings.other_since).toISOString(),'2026-10-22T22:00:00.000Z');assert.equal(settings.rollout_version,2);
 console.log('PASS J+3 begins exactly 72 hours after confirmation, never duplicates, respects opt-out, and rerunning SQL keeps fixed dates');
+for(const n of [7,8,9,10,11,12]){
+const email=n===11?'extra8@example.test':n===12?'extra9@example.test':'extra'+n+'@example.test';
+await db.query("insert into auth.users values($1,$2,'2026-10-01T10:00:00Z','2026-10-01T09:00:00Z',null)",[uuid(n),email]);
+await db.query("insert into subscriptions values($1,$2,'stripe',$3,$4,$5,'2026-10-01T10:00:00Z')",[uuid(100+n),uuid(n),[7,11].includes(n)?'active':'canceled',n===8?'2026-10-08T10:00:00Z':null,'2026-11-01T10:00:00Z']);
+}
+await db.query('insert into lifecycle_email_preferences(user_id,enabled) values($1,false)',[uuid(10)]);
+const campaign=fs.readFileSync(path.join(folder,'202611120001_reengagement_campaign.sql'),'utf8');
+await db.exec(campaign);
+let campaignRows=(await db.query("select * from lifecycle_email_outbox where kind='reengagement'")).rows;
+assert.equal(campaignRows.length,4);
+assert.ok(campaignRows.some(r=>[uuid(9),uuid(12)].includes(r.user_id)));
+assert.ok(!campaignRows.some(r=>[uuid(2),uuid(5),uuid(6),uuid(7),uuid(8),uuid(10),uuid(11)].includes(r.user_id)));
+await db.exec(campaign);assert.equal((await db.query("select count(*)::int n from lifecycle_email_outbox where kind='reengagement'")).rows[0].n,4);
+const paying=campaignRows.find(r=>[uuid(9),uuid(12)].includes(r.user_id));
+await db.query("update subscriptions set status='active' where user_id=$1",[uuid(9)]);
+assert.equal((await db.query('select lifecycle_email_is_relevant($1) v',[paying.id])).rows[0].v,false);
+const old=campaignRows.find(r=>r.user_id===uuid(1));
+assert.equal((await db.query('select lifecycle_email_is_relevant($1) v',[old.id])).rows[0].v,true);
+await db.query('insert into lifecycle_email_preferences(user_id,enabled) values($1,false)',[uuid(1)]);
+assert.equal((await db.query('select lifecycle_email_is_relevant($1) v',[old.id])).rows[0].v,false);
+console.log('PASS one-off reengagement includes expired trials and paid access without recency limit; excludes active/opt-out/unconfirmed; deduplicates addresses and reruns; renewal rechecked before delivery');
 }finally{await db.close()}})().catch(e=>{console.error(e);process.exitCode=1});

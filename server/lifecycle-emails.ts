@@ -2,7 +2,7 @@ import { lifecycleTemplates } from './lifecycle-email-templates';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
-export type EmailKind = 'welcome' | 'check_in' | 'trial_expired' | 'mobile_confirmed' | 'mobile_expiring' | 'mobile_expired';
+export type EmailKind = 'welcome' | 'check_in' | 'trial_expired' | 'mobile_confirmed' | 'mobile_expiring' | 'mobile_expired' | 'reengagement';
 type EmailJob = { id: string; user_id: string; kind: EmailKind; recipient_email: string; payload: Record<string, unknown> };
 const emailPattern = /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/;
 export function emailConfiguration() {

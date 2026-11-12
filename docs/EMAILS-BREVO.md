@@ -31,6 +31,12 @@ Les variables Stripe, Voaray, Web Push et les emails de sécurité Supabase rest
 
 ## Fiabilité et désinscription
 
+### Relance ponctuelle validée du 12 novembre 2026
+
+Le type `reengagement` utilise le HTML validé « Tu avais fait le premier pas. Et si tu continuais ? 🌱 ». Après déploiement, exécuter `supabase/migrations/202611120001_reengagement_campaign.sql` pour mettre en file les anciens abonnés non renouvelés et les essais terminés, sans limite d’ancienneté. Ce n’est pas un nouvel envoi récurrent : le collecteur habituel n’ajoute pas de relances de ce type.
+
+Le script sélectionne une fois l’audience éligible, déduplique les adresses et les relancements du script, exclut les comptes non confirmés, supprimés, désinscrits ou disposant d’un accès actif, y compris lorsqu’un autre compte avec la même adresse est actif ou désinscrit. Le statut est revérifié avant envoi. Il réutilise la file et ses plafonds, sans ajouter de table. Exécuter ce script uniquement après publication du nouveau code ; les versions précédentes ne connaissent pas ce type d’email.
+
 La file privée garde une clé unique par événement et destinataire, et des baux empêchent deux tâches de traiter simultanément le même email. La clé d’idempotence Brevo est l’UUID de la ligne. Seules trois tentatives sont possibles dans les vingt minutes suivant la première, sous la fenêtre de déduplication Brevo ; au-delà, le statut passe à `review`, sans nouvel envoi automatique. Ne pas remettre ces lignes en attente sans vérifier les logs Brevo : l’email a pu être accepté malgré une réponse réseau perdue.
 
 Le statut `sent` signifie **accepté par Brevo**, pas réception prouvée dans la boîte du destinataire. Les rejets, blocages ou spams se contrôlent dans les journaux Brevo. Les logs Netlify n’affichent que des compteurs, sans adresses, contenus ni clés.
